@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.pagination import PageNumberPagination
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.utils.decorators import method_decorator
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
@@ -18,6 +18,7 @@ from .permissions import IsDatasetOwner, CanDeleteDatasets
 from .cache import invalidate_process_caches
 import logging
 import uuid
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -789,7 +790,69 @@ class PublicDownloadDataView(APIView):
             if file_format not in ['csv', 'xlsx']:
                 file_format = 'csv'
 
+            # Get filters from query params
+            filters_param = request.GET.get('filters', '')
+            active_filters = {}
+            if filters_param:
+                try:
+                    import json
+                    active_filters = json.loads(filters_param)
+                except (json.JSONDecodeError, ValueError):
+                    logger.warning(f"Invalid filters JSON: {filters_param}")
+
             from .models import ImportedDataRecord
+
+            def apply_filters_to_record(record_data, filters):
+                """Apply filters to a single record"""
+                if not filters:
+                    return True
+
+                for column_name, filter_config in filters.items():
+                    if not filter_config:
+                        continue
+
+                    cell_value = record_data.get(column_name)
+                    filter_type = filter_config.get('type')
+                    filter_value = filter_config.get('value')
+                    filter_operator = filter_config.get('operator')
+
+                    if filter_type == 'string':
+                        cell_str = str(cell_value).lower() if cell_value is not None else ""
+                        filter_str = str(filter_value).lower() if filter_value else ""
+
+                        if filter_operator == 'contains' and filter_str not in cell_str:
+                            return False
+                        elif filter_operator == 'equals' and cell_str != filter_str:
+                            return False
+                        elif filter_operator == 'startsWith' and not cell_str.startswith(filter_str):
+                            return False
+                        elif filter_operator == 'endsWith' and not cell_str.endswith(filter_str):
+                            return False
+
+                    elif filter_type in ['number', 'integer', 'float']:
+                        try:
+                            cell_num = float(cell_value) if cell_value is not None else 0
+                            filter_num = float(filter_value) if filter_value else 0
+
+                            if filter_operator == 'equals' and cell_num != filter_num:
+                                return False
+                            elif filter_operator == 'greaterThan' and cell_num <= filter_num:
+                                return False
+                            elif filter_operator == 'lessThan' and cell_num >= filter_num:
+                                return False
+                            elif filter_operator == 'greaterThanOrEqual' and cell_num < filter_num:
+                                return False
+                            elif filter_operator == 'lessThanOrEqual' and cell_num > filter_num:
+                                return False
+                        except (ValueError, TypeError):
+                            return False
+
+                    elif filter_type == 'category':
+                        selected_values = filter_value if isinstance(filter_value, list) else []
+                        if selected_values and str(cell_value).lower() not in [v.lower() for v in selected_values]:
+                            return False
+
+                return True
 
             if file_format == 'csv':
                 def iter_csv_rows():
@@ -806,6 +869,10 @@ class PublicDownloadDataView(APIView):
                     # Stream records in batches
                     records = ImportedDataRecord.objects.filter(process=process).iterator(chunk_size=1000)
                     for record in records:
+                        # Apply filters
+                        if not apply_filters_to_record(record.data, active_filters):
+                            continue
+
                         row = [record.data.get(col, '') for col in selected_columns]
                         yield writer.writerow(row)
 
@@ -820,6 +887,9 @@ class PublicDownloadDataView(APIView):
                 import openpyxl
                 from openpyxl import Workbook
 
+                # Save to bytes
+                output = io.BytesIO()
+
                 wb = Workbook(write_only=True)
                 ws = wb.create_sheet(process.table_name[:31])
 
@@ -829,12 +899,16 @@ class PublicDownloadDataView(APIView):
                 # Write data in batches using iterator
                 records = ImportedDataRecord.objects.filter(process=process).iterator(chunk_size=1000)
                 for record in records:
+                    # Apply filters
+                    if not apply_filters_to_record(record.data, active_filters):
+                        continue
+
                     row = [record.data.get(col, '') for col in selected_columns]
                     ws.append(row)
 
-                # Save to bytes
-                output = io.BytesIO()
+                # Save and close workbook properly
                 wb.save(output)
+                wb.close()
                 output.seek(0)
 
                 content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
