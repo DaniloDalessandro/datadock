@@ -1,48 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, Company, InternalProfile, ExternalProfile
-
-
-@admin.register(Company)
-class CompanyAdmin(admin.ModelAdmin):
-    list_display = ['name', 'cnpj', 'email', 'phone', 'is_active_display', 'created_by', 'created_at']
-    list_filter = ['is_active', 'created_at', 'created_by']
-    search_fields = ['name', 'cnpj', 'email']
-    ordering = ['name']
-    readonly_fields = ['created_at', 'updated_at', 'created_by', 'updated_by']
-
-    fieldsets = (
-        ('🏢 Informações Básicas', {
-            'fields': ('name', 'cnpj', 'email', 'phone')
-        }),
-        ('✅ Status', {
-            'fields': ('is_active',)
-        }),
-        ('📅 Auditoria', {
-            'fields': ('created_at', 'created_by', 'updated_at', 'updated_by'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def is_active_display(self, obj):
-        """Exibe status ativo/inativo com badge colorido"""
-        if obj.is_active:
-            return format_html(
-                '<span style="background-color: #28a745; color: white; padding: 3px 10px; '
-                'border-radius: 3px; font-size: 11px; font-weight: bold;">✓ ATIVO</span>'
-            )
-        return format_html(
-            '<span style="background-color: #dc3545; color: white; padding: 3px 10px; '
-            'border-radius: 3px; font-size: 11px; font-weight: bold;">✗ INATIVO</span>'
-        )
-    is_active_display.short_description = 'Status'
-
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.created_by = request.user
-        obj.updated_by = request.user
-        super().save_model(request, obj, form, change)
+from .models import CustomUser, InternalProfile, ExternalProfile
 
 
 @admin.register(CustomUser)

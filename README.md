@@ -1,4 +1,4 @@
-# 📊 DataPort
+# 📊 DataDock
 
 **Sistema completo de gerenciamento e importação de dados com suporte a múltiplas fontes**
 
@@ -33,9 +33,9 @@
 
 ## 🎯 Sobre o Projeto
 
-DataPort é uma plataforma completa para importação, gerenciamento e consulta de grandes volumes de dados de múltiplas fontes. Desenvolvido com Django REST Framework no backend e Next.js no frontend, oferece uma interface moderna e APIs robustas para integração de dados empresariais.
+**DataDock** é uma plataforma completa para importação, gerenciamento e consulta de grandes volumes de dados de múltiplas fontes. Desenvolvido com Django REST Framework no backend e Next.js no frontend, oferece uma interface moderna e APIs robustas para integração de dados empresariais.
 
-### Por que DataPort?
+### Por que DataDock?
 
 - 🚀 **Rápido**: Processamento otimizado com cache Redis e bulk operations
 - 🔒 **Seguro**: Autenticação JWT, permissões granulares, rate limiting
@@ -62,12 +62,14 @@ DataPort é uma plataforma completa para importação, gerenciamento e consulta 
 ### 🔍 Consulta e Busca
 
 - ✅ Busca full-text em todos os datasets
-- ✅ Filtros avançados por coluna
+- ✅ Filtros avançados por coluna (numéricos, texto, data, categoria)
+- ✅ Filtros de seleção para colunas TEXT (até 100 valores únicos)
 - ✅ Paginação otimizada
-- ✅ Export em CSV e Excel
+- ✅ Export em CSV e Excel com filtros aplicados
 - ✅ Preview de dados
-- ✅ Metadados de colunas (tipos, valores únicos)
+- ✅ Metadados de colunas (tipos, valores únicos, filter_type)
 - ✅ Datasets públicos e privados
+- ✅ Seleção de colunas para download
 
 ### 📊 Dashboard e Analytics
 
@@ -312,6 +314,8 @@ celery -A core beat -l info
 
 ## 🐳 Docker - Guia Completo
 
+📖 **[Documentação Completa de Docker](DOCKER.md)** - Guia detalhado com comandos, troubleshooting e dicas
+
 ### Estrutura de Serviços
 
 ```yaml
@@ -453,7 +457,14 @@ EMAIL_HOST_PASSWORD=sua-senha-de-app
 
 ### Health Checks
 
-Todos os serviços têm health checks automáticos:
+Todos os serviços têm health checks automáticos. Endpoints disponíveis:
+
+| Endpoint | Descrição | Componentes Verificados |
+|----------|-----------|------------------------|
+| `/health/` | Basic health check | Database |
+| `/health/detailed/` | Verificação completa | Database, Redis, Celery, Disk Space |
+| `/health/ready/` | Readiness probe (Kubernetes) | Database |
+| `/health/live/` | Liveness probe (Kubernetes) | Application status |
 
 ```bash
 # Verificar saúde dos serviços
@@ -463,6 +474,19 @@ docker-compose ps
 curl http://localhost:8000/health/
 curl http://localhost:8000/health/detailed/
 curl http://localhost:8000/health/ready/
+curl http://localhost:8000/health/live/
+
+# Resposta de exemplo (health/detailed/)
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "checks": {
+    "database": {"status": "healthy", "message": "Database connection OK"},
+    "cache": {"status": "healthy", "message": "Cache connection OK"},
+    "celery": {"status": "healthy", "message": "2 Celery worker(s) active"},
+    "disk": {"status": "healthy", "used_percent": 45.2, "free_gb": 120.5}
+  }
+}
 ```
 
 ### Volumes Persistentes
@@ -583,9 +607,18 @@ Response: {"count": 10, "results": [...]}
 GET /api/data-import/public-data/{id}/
 Response: {"columns": [...], "data": [...]}
 
-# Metadados de colunas
+# Metadados de colunas (com tipos de filtros)
 GET /api/data-import/public-metadata/{id}/
-Response: {"columns": [{"name": "...", "type": "...", "filter_type": "..."}]}
+Response: {
+  "columns": [
+    {
+      "name": "nome",
+      "type": "TEXT",
+      "filter_type": "category",  # string, integer, float, date, category
+      "unique_values": ["valor1", "valor2", ...]  # até 100 valores
+    }
+  ]
+}
 ```
 
 #### Analytics
@@ -1189,6 +1222,18 @@ Seu PR será revisado. Mudanças podem ser solicitadas.
 - **Backend data_import**: 0% ⚠️ (em desenvolvimento)
 - **Frontend**: ~30% ⚠️ (em desenvolvimento)
 
+### Melhorias Recentes (v1.0.5)
+
+- ✅ Correção de bug crítico: Timestamp serialization (datasets com colunas de data)
+- ✅ Filtros de categoria para colunas TEXT (seleção de valores únicos)
+- ✅ Favicon/ícone do site (database icon azul)
+- ✅ Docker otimizado com multi-stage builds
+- ✅ Configuração Nginx completa (proxy reverso, cache, gzip)
+- ✅ Limpeza de código e comentários em PT-BR
+- ✅ Documentação Docker completa (DOCKER.md)
+- ✅ Health checks robustos (basic, detailed, ready, live)
+- ✅ Next.js standalone output para Docker
+
 ### Roadmap
 
 #### v1.1 (Em desenvolvimento)
@@ -1221,7 +1266,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 ```
 MIT License
 
-Copyright (c) 2024 DataPort
+Copyright (c) 2024 DataDock
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1253,6 +1298,7 @@ Veja também a lista de [contribuidores](https://github.com/seu-usuario/dataport
 ## 📞 Suporte
 
 - **Documentação**: [Wiki](https://github.com/seu-usuario/dataport/wiki)
+- **Docker Guide**: [DOCKER.md](DOCKER.md) - Guia completo de Docker
 - **Issues**: [GitHub Issues](https://github.com/seu-usuario/dataport/issues)
 - **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/dataport/discussions)
 
@@ -1264,6 +1310,6 @@ Veja também a lista de [contribuidores](https://github.com/seu-usuario/dataport
 
 **Desenvolvido com ❤️ para facilitar a gestão de dados**
 
-[⬆ Voltar ao topo](#-dataport)
+[⬆ Voltar ao topo](#-datadock)
 
 </div>

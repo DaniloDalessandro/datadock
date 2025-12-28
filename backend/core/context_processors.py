@@ -3,7 +3,6 @@ Context processors para adicionar dados globais aos templates
 """
 from django.contrib.auth import get_user_model
 from data_import.models import DataImportProcess, ImportedDataRecord
-from accounts.models import Company
 
 User = get_user_model()
 
@@ -17,6 +16,5 @@ def admin_stats(request):
             'user_count': User.objects.count(),
             'dataset_count': DataImportProcess.objects.count(),
             'record_count': ImportedDataRecord.objects.count(),
-            'company_count': Company.objects.count(),
         }
     return {}
