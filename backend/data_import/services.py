@@ -170,6 +170,15 @@ class DataImportService:
         # Convert to list of dictionaries
         data = df.to_dict('records')
 
+        # Convert pandas Timestamp objects to strings for JSON serialization
+        for record in data:
+            for key, value in record.items():
+                if isinstance(value, (pd.Timestamp, datetime)):
+                    # Convert to ISO format string
+                    record[key] = value.isoformat() if value else None
+                elif pd.isna(value):
+                    record[key] = None
+
         return data
 
     @staticmethod

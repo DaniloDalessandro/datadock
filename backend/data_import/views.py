@@ -1061,7 +1061,7 @@ class PublicColumnMetadataView(APIView):
                 col_type = col_info.get('type', 'string') if isinstance(col_info, dict) else str(col_info)
 
                 # Determine filter type based on column type
-                filter_type = 'string'
+                filter_type = 'string'  # Default for TEXT and string types
                 if col_type in ['INTEGER', 'int', 'bigint', 'smallint']:
                     filter_type = 'integer'
                 elif col_type in ['REAL', 'float', 'double', 'decimal', 'numeric']:
@@ -1072,6 +1072,8 @@ class PublicColumnMetadataView(APIView):
                     filter_type = 'datetime'
                 elif col_type in ['BOOLEAN', 'bool']:
                     filter_type = 'boolean'
+                elif col_type in ['TEXT', 'VARCHAR', 'CHAR', 'text', 'varchar', 'char', 'string', 'str']:
+                    filter_type = 'category'  # TEXT columns use category filter (selection)
 
                 # Get unique values for category filters (limit to 100)
                 unique_values = []
@@ -1087,10 +1089,6 @@ class PublicColumnMetadataView(APIView):
                                 break
 
                     unique_values = sorted(list(unique_set))[:100]
-
-                    # If there are few unique values, treat as category
-                    if len(unique_values) <= 20 and filter_type == 'string':
-                        filter_type = 'category'
                 except Exception as e:
                     logger.error(f"Error getting unique values for {col_name}: {e}")
 
