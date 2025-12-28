@@ -199,12 +199,12 @@ export default function DashboardPage() {
   const { metrics, dataset_status, monthly_volume, summary } = dashboardData
 
   return (
-    <div className="flex flex-col gap-8 p-8 max-h-screen overflow-y-auto animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-base text-gray-600 mt-2">Visão geral do sistema DataDock</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-600 mt-1">Visão geral do sistema DataDock</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
           <Clock className="h-4 w-4" />
@@ -213,14 +213,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-8">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-600 mb-1">Datasets Ativos</p>
-                <div className="flex items-baseline gap-3 mt-3">
-                  <h3 className="text-5xl font-bold text-gray-900">{metrics.active_datasets}</h3>
+                <div className="flex items-baseline gap-3 mt-2">
+                  <h3 className="text-4xl font-bold text-gray-900">{metrics.active_datasets}</h3>
                   {metrics.growth_rate > 0 && (
                     <span className="flex items-center text-base text-green-600 font-medium">
                       <TrendingUp className="h-4 w-4 mr-1" />
@@ -238,12 +238,12 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-8">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-600 mb-1">Registros Totais</p>
-                <div className="flex items-baseline gap-3 mt-3">
-                  <h3 className="text-5xl font-bold text-gray-900">
+                <div className="flex items-baseline gap-3 mt-2">
+                  <h3 className="text-4xl font-bold text-gray-900">
                     {metrics.total_records >= 1000000
                       ? `${(metrics.total_records / 1000000).toFixed(1)}M`
                       : metrics.total_records >= 1000
@@ -267,12 +267,12 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-8">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-600 mb-1">Armazenamento</p>
-                <div className="flex items-baseline gap-3 mt-3">
-                  <h3 className="text-5xl font-bold text-gray-900">{metrics.storage_tb.toFixed(2)}</h3>
+                <div className="flex items-baseline gap-3 mt-2">
+                  <h3 className="text-4xl font-bold text-gray-900">{metrics.storage_tb.toFixed(2)}</h3>
                   <span className="text-lg text-gray-600">TB</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-3">{metrics.storage_percent}% utilizado do total disponível</p>
@@ -286,14 +286,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Charts */}
-      <div className="grid gap-8">
+      <div className="grid gap-6">
         <ChartCard
           title="Volume de Dados Mensal"
           description="Evolução do volume de dados armazenados ao longo dos meses (em GB)"
           chartKey="monthlyVolume"
           chartStates={chartStates}
           onToggleFullscreen={toggleFullscreen}
-          height={400}
+          height={250}
         >
           <AreaChart data={monthly_volume}>
             <defs>
