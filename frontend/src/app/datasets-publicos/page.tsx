@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, Database, Loader2, Table2, Calendar, Hash, Columns3, CheckCircle2 } from "lucide-react"
+import { Download, Database, Loader2, Calendar, Hash, Columns3, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Table,
@@ -37,13 +37,6 @@ interface ColumnMetadata {
   unique_values: string[]
 }
 
-interface SearchResult {
-  process_id: number
-  table_name: string
-  columns: string[]
-  data: Record<string, string | number | boolean>[]
-  count: number
-}
 
 interface PublicDataset {
   id: number
@@ -63,7 +56,6 @@ interface PublicDataResponse {
 
 export default function DatasetsPublicosPage() {
   const [isSearching, setIsSearching] = useState(false)
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [datasets, setDatasets] = useState<PublicDataset[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true)
@@ -204,6 +196,10 @@ export default function DatasetsPublicosPage() {
     }
   }
 
+  /**
+   * Aplica filtros aos dados baseado nos filtros ativos.
+   * Lógica AND: todos os filtros devem passar para o registro ser incluído.
+   */
   const applyFilters = (data: Record<string, string | number | boolean>[]) => {
     if (Object.keys(activeFilters).length === 0) return data
 
@@ -391,7 +387,6 @@ export default function DatasetsPublicosPage() {
       <Dialog open={isModalOpen} onOpenChange={(open) => {
         setIsModalOpen(open)
         if (!open) {
-          setSearchResults([])
           setActiveFilters({})
         }
       }}>

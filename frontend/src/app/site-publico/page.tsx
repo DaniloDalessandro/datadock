@@ -263,6 +263,10 @@ export default function SitePublicoPage() {
     }
   }
 
+  /**
+   * Aplica filtros aos dados baseado nos filtros ativos.
+   * Lógica AND: todos os filtros devem passar para o registro ser incluído.
+   */
   const applyFilters = (data: Record<string, string | number | boolean>[], filters: Record<string, FilterValue>) => {
     if (Object.keys(filters).length === 0) return data
 

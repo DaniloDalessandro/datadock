@@ -45,7 +45,8 @@ class DataImportService:
     @staticmethod
     def detect_column_type(values: List[Any]) -> str:
         """
-        Detect the most appropriate SQL type for a column based on its values
+        Detecta o tipo SQL mais apropriado para uma coluna baseado em seus valores.
+        Suporta detecção de datas, números e strings.
         """
         from dateutil import parser as date_parser
 
@@ -56,9 +57,8 @@ class DataImportService:
 
         sample = non_none_values[:100]
 
-        # Check if values are already datetime objects
+        # Verifica se os valores já são objetos datetime
         if any(isinstance(v, (pd.Timestamp, datetime)) for v in sample):
-            # Check if any has time component
             has_time = False
             for v in sample:
                 if isinstance(v, (pd.Timestamp, datetime)):
@@ -67,31 +67,28 @@ class DataImportService:
                         break
             return 'datetime' if has_time else 'date'
 
-        # Check if string values are dates
+        # Tenta detectar datas em strings
         if all(isinstance(v, str) for v in sample):
             date_count = 0
             datetime_count = 0
 
-            for v in sample[:20]:  # Check first 20 samples
+            for v in sample[:20]:
                 try:
-                    # Try to parse as date
                     parsed_date = date_parser.parse(v, fuzzy=False)
 
-                    # Check if it has time component
                     if parsed_date.hour != 0 or parsed_date.minute != 0 or parsed_date.second != 0:
                         datetime_count += 1
                     else:
                         date_count += 1
                 except (ValueError, TypeError, AttributeError):
-                    # Not a date, continue
                     pass
 
-            # If more than 80% are dates, consider it a date column
+            # Se mais de 80% são datas, considera coluna de data
             total_parsed = date_count + datetime_count
             if total_parsed > len(sample[:20]) * 0.8:
                 return 'datetime' if datetime_count > date_count else 'date'
 
-        # Fall back to type-based detection
+        # Fallback: detecção por tipo Python
         types = [type(v).__name__ for v in sample]
         most_common = max(set(types), key=types.count)
 
@@ -410,23 +407,24 @@ class DataImportService:
     @staticmethod
     def insert_data_orm(process, data: List[Dict], column_structure: Dict[str, Dict]) -> Dict[str, int]:
         """
-        Insert data using Django ORM with bulk operations for performance.
-        Returns: dictionary with statistics {
-            'inserted': number of records inserted,
-            'duplicates': number of duplicates skipped,
-            'errors': number of errors,
-            'total': total records processed
+        Insere dados usando Django ORM com operações em lote para performance.
+
+        Retorna: dicionário com estatísticas {
+            'inserted': número de registros inseridos,
+            'duplicates': número de duplicatas ignoradas,
+            'errors': número de erros,
+            'total': total de registros processados
         }
         """
         from .models import ImportedDataRecord
 
         if not data:
-            logger.warning(f"insert_data_orm: data is empty!")
+            logger.warning("insert_data_orm: data is empty!")
             return {'inserted': 0, 'duplicates': 0, 'errors': 0, 'total': 0}
 
         logger.info(f"[DEBUG] Starting insert_data_orm with {len(data)} records")
 
-        # Map original names to sanitized names
+        # Mapeia nomes originais para nomes sanitizados
         name_mapping = {
             info['original_name']: col_name
             for col_name, info in column_structure.items()
@@ -435,12 +433,10 @@ class DataImportService:
         logger.info(f"[DEBUG] Name mapping created with {len(name_mapping)} entries")
         logger.info(f"[DEBUG] First 3 mappings: {dict(list(name_mapping.items())[:3])}")
 
-        # Log first record to see what column names we're receiving
         if data:
             first_record_keys = list(data[0].keys())
             logger.info(f"[DEBUG] First record has columns: {first_record_keys[:5]}...")
 
-            # Check if any keys from first record match the mapping
             matched_keys = [k for k in first_record_keys if k in name_mapping]
             unmatched_keys = [k for k in first_record_keys if k not in name_mapping]
             logger.info(f"[DEBUG] Matched keys: {len(matched_keys)}, Unmatched keys: {len(unmatched_keys)}")

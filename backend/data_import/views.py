@@ -7,7 +7,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 from django.utils.decorators import method_decorator
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
-from datetime import datetime, timedelta
+from datetime import datetime
 from django_ratelimit.decorators import ratelimit
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 def log_error_safely(error: Exception, context: str = "") -> str:
     """
-    Registra detalhes do erro no servidor e retorna um ID seguro para o cliente.
-    Nunca expõe detalhes internos ao cliente.
+    Registra detalhes do erro no servidor de forma segura.
+    Retorna um ID único para rastreamento sem expor detalhes internos ao cliente.
     """
     import traceback
     error_id = str(uuid.uuid4())[:8]
@@ -827,7 +827,10 @@ class PublicDownloadDataView(APIView):
             total_count = 0
 
             def apply_filters_to_record(record_data, filters):
-                """Apply filters to a single record"""
+                """
+                Aplica filtros a um registro individual.
+                Retorna True se o registro passar por todos os filtros ativos.
+                """
                 nonlocal filtered_count, total_count
                 total_count += 1
 
@@ -835,7 +838,7 @@ class PublicDownloadDataView(APIView):
                     filtered_count += 1
                     return True
 
-                # Se qualquer filtro rejeitar, retorna False
+                # Lógica AND: todos os filtros devem passar
                 for column_name, filter_config in filters.items():
                     if not filter_config:
                         continue
@@ -849,7 +852,6 @@ class PublicDownloadDataView(APIView):
                         cell_str = str(cell_value).lower() if cell_value is not None else ""
                         filter_str = str(filter_value).lower() if filter_value else ""
 
-                        # Se não há valor de filtro, passa
                         if not filter_str:
                             continue
 
@@ -885,7 +887,6 @@ class PublicDownloadDataView(APIView):
                         if selected_values and str(cell_value).lower() not in [v.lower() for v in selected_values]:
                             return False
 
-                # Se passou por todos os filtros, aceita
                 filtered_count += 1
                 return True
 

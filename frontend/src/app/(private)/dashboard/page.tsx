@@ -51,6 +51,9 @@ interface ChartCardProps {
   height?: number
 }
 
+/**
+ * Componente de card para gráficos com suporte a visualização em tela cheia.
+ */
 function ChartCard({
   title,
   description,
@@ -132,6 +135,7 @@ export default function DashboardPage() {
     }))
   }
 
+  // Carrega dados do dashboard ao montar o componente
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
