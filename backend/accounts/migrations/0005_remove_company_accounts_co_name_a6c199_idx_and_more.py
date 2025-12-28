@@ -6,111 +6,140 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0004_externalprofile_internalprofile_and_more'),
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("accounts", "0004_externalprofile_internalprofile_and_more"),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='company',
-            name='accounts_co_name_a6c199_idx',
+            model_name="company",
+            name="accounts_co_name_a6c199_idx",
         ),
         migrations.RemoveIndex(
-            model_name='company',
-            name='accounts_co_cnpj_3c1d53_idx',
+            model_name="company",
+            name="accounts_co_cnpj_3c1d53_idx",
         ),
         migrations.RemoveIndex(
-            model_name='company',
-            name='accounts_co_is_acti_4abc2f_idx',
+            model_name="company",
+            name="accounts_co_is_acti_4abc2f_idx",
         ),
         migrations.RemoveIndex(
-            model_name='customuser',
-            name='accounts_cu_usernam_ab560e_idx',
+            model_name="customuser",
+            name="accounts_cu_usernam_ab560e_idx",
         ),
         migrations.RemoveIndex(
-            model_name='customuser',
-            name='accounts_cu_profile_5376c8_idx',
+            model_name="customuser",
+            name="accounts_cu_profile_5376c8_idx",
         ),
         migrations.RemoveIndex(
-            model_name='customuser',
-            name='accounts_cu_is_acti_2885e2_idx',
+            model_name="customuser",
+            name="accounts_cu_is_acti_2885e2_idx",
         ),
         migrations.RemoveIndex(
-            model_name='customuser',
-            name='accounts_cu_created_35a2d8_idx',
+            model_name="customuser",
+            name="accounts_cu_created_35a2d8_idx",
         ),
         migrations.RemoveIndex(
-            model_name='externalprofile',
-            name='accounts_ex_company_9ebbd2_idx',
+            model_name="externalprofile",
+            name="accounts_ex_company_9ebbd2_idx",
         ),
         migrations.RemoveIndex(
-            model_name='externalprofile',
-            name='accounts_ex_externa_a421a8_idx',
+            model_name="externalprofile",
+            name="accounts_ex_externa_a421a8_idx",
         ),
         migrations.RemoveIndex(
-            model_name='externalprofile',
-            name='accounts_ex_cnpj_562a05_idx',
+            model_name="externalprofile",
+            name="accounts_ex_cnpj_562a05_idx",
         ),
         migrations.RemoveIndex(
-            model_name='internalprofile',
-            name='accounts_in_employe_d9adfd_idx',
+            model_name="internalprofile",
+            name="accounts_in_employe_d9adfd_idx",
         ),
         migrations.RemoveIndex(
-            model_name='internalprofile',
-            name='accounts_in_departm_fe2110_idx',
+            model_name="internalprofile",
+            name="accounts_in_departm_fe2110_idx",
         ),
         migrations.RenameIndex(
-            model_name='customuser',
-            new_name='user_email_idx',
-            old_name='accounts_cu_email_5ce40b_idx',
+            model_name="customuser",
+            new_name="user_email_idx",
+            old_name="accounts_cu_email_5ce40b_idx",
         ),
         migrations.AlterField(
-            model_name='company',
-            name='cnpj',
-            field=models.CharField(db_index=True, max_length=18, unique=True, verbose_name='CNPJ'),
+            model_name="company",
+            name="cnpj",
+            field=models.CharField(
+                db_index=True, max_length=18, unique=True, verbose_name="CNPJ"
+            ),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='is_active',
-            field=models.BooleanField(db_index=True, default=True, verbose_name='Ativa'),
+            model_name="company",
+            name="is_active",
+            field=models.BooleanField(
+                db_index=True, default=True, verbose_name="Ativa"
+            ),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='name',
-            field=models.CharField(db_index=True, max_length=200, verbose_name='Nome'),
+            model_name="company",
+            name="name",
+            field=models.CharField(db_index=True, max_length=200, verbose_name="Nome"),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='companies',
-            field=models.ManyToManyField(blank=True, related_name='users', to='accounts.company', verbose_name='Empresas'),
+            model_name="customuser",
+            name="companies",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="users",
+                to="accounts.company",
+                verbose_name="Empresas",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='cpf',
-            field=models.CharField(blank=True, db_index=True, max_length=14, null=True, unique=True, verbose_name='CPF'),
+            model_name="customuser",
+            name="cpf",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                max_length=14,
+                null=True,
+                unique=True,
+                verbose_name="CPF",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='is_active',
-            field=models.BooleanField(db_index=True, default=True, verbose_name='Ativo'),
+            model_name="customuser",
+            name="is_active",
+            field=models.BooleanField(
+                db_index=True, default=True, verbose_name="Ativo"
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='must_change_password',
-            field=models.BooleanField(default=False, verbose_name='Deve alterar senha'),
+            model_name="customuser",
+            name="must_change_password",
+            field=models.BooleanField(default=False, verbose_name="Deve alterar senha"),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='phone',
-            field=models.CharField(blank=True, max_length=20, null=True, verbose_name='Telefone'),
+            model_name="customuser",
+            name="phone",
+            field=models.CharField(
+                blank=True, max_length=20, null=True, verbose_name="Telefone"
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='profile_type',
-            field=models.CharField(choices=[('interno', 'Interno'), ('externo', 'Externo')], db_index=True, default='interno', help_text='Define se o usuário é interno ou externo à organização', max_length=10, verbose_name='Tipo de Perfil'),
+            model_name="customuser",
+            name="profile_type",
+            field=models.CharField(
+                choices=[("interno", "Interno"), ("externo", "Externo")],
+                db_index=True,
+                default="interno",
+                help_text="Define se o usuário é interno ou externo à organização",
+                max_length=10,
+                verbose_name="Tipo de Perfil",
+            ),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['is_active', 'profile_type'], name='user_active_profile_idx'),
+            model_name="customuser",
+            index=models.Index(
+                fields=["is_active", "profile_type"], name="user_active_profile_idx"
+            ),
         ),
     ]

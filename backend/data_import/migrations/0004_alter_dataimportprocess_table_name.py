@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_import', '0003_importeddatarecord'),
+        ("data_import", "0003_importeddatarecord"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dataimportprocess',
-            name='table_name',
-            field=models.CharField(help_text='Nome da tabela criada no banco de dados', max_length=255, unique=True, verbose_name='Nome da Tabela'),
+            model_name="dataimportprocess",
+            name="table_name",
+            field=models.CharField(
+                help_text="Nome da tabela criada no banco de dados",
+                max_length=255,
+                unique=True,
+                verbose_name="Nome da Tabela",
+            ),
         ),
     ]

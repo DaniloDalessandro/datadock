@@ -11,58 +11,199 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Company',
+            name="Company",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, verbose_name='Nome')),
-                ('cnpj', models.CharField(max_length=18, unique=True, verbose_name='CNPJ')),
-                ('email', models.EmailField(blank=True, max_length=254, null=True, verbose_name='E-mail')),
-                ('phone', models.CharField(blank=True, max_length=20, null=True, verbose_name='Telefone')),
-                ('address', models.CharField(blank=True, max_length=300, null=True, verbose_name='Endereço')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Ativa')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, verbose_name="Nome")),
+                (
+                    "cnpj",
+                    models.CharField(max_length=18, unique=True, verbose_name="CNPJ"),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, null=True, verbose_name="E-mail"
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True, max_length=20, null=True, verbose_name="Telefone"
+                    ),
+                ),
+                (
+                    "address",
+                    models.CharField(
+                        blank=True, max_length=300, null=True, verbose_name="Endereço"
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Ativa")),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Criado em"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Atualizado em"),
+                ),
             ],
             options={
-                'verbose_name': 'Empresa',
-                'verbose_name_plural': 'Empresas',
-                'ordering': ['name'],
+                "verbose_name": "Empresa",
+                "verbose_name_plural": "Empresas",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='CustomUser',
+            name="CustomUser",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('username', models.CharField(error_messages={'unique': 'A user with that username already exists.'}, help_text='Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.', max_length=150, unique=True, validators=[django.contrib.auth.validators.UnicodeUsernameValidator()], verbose_name='username')),
-                ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name')),
-                ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
-                ('email', models.EmailField(blank=True, max_length=254, verbose_name='email address')),
-                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
-                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('phone', models.CharField(blank=True, max_length=20, null=True, verbose_name='Telefone')),
-                ('cpf', models.CharField(blank=True, max_length=14, null=True, unique=True, verbose_name='CPF')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Ativo')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
-                ('companies', models.ManyToManyField(blank=True, related_name='users', to='accounts.company', verbose_name='Empresas')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "last_login",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="last login"
+                    ),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        error_messages={
+                            "unique": "A user with that username already exists."
+                        },
+                        help_text="Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+                        max_length=150,
+                        unique=True,
+                        validators=[
+                            django.contrib.auth.validators.UnicodeUsernameValidator()
+                        ],
+                        verbose_name="username",
+                    ),
+                ),
+                (
+                    "first_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="first name"
+                    ),
+                ),
+                (
+                    "last_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="last name"
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, verbose_name="email address"
+                    ),
+                ),
+                (
+                    "is_staff",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates whether the user can log into this admin site.",
+                        verbose_name="staff status",
+                    ),
+                ),
+                (
+                    "date_joined",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="date joined"
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        blank=True, max_length=20, null=True, verbose_name="Telefone"
+                    ),
+                ),
+                (
+                    "cpf",
+                    models.CharField(
+                        blank=True,
+                        max_length=14,
+                        null=True,
+                        unique=True,
+                        verbose_name="CPF",
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="Ativo")),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Criado em"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Atualizado em"),
+                ),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
+                (
+                    "companies",
+                    models.ManyToManyField(
+                        blank=True,
+                        related_name="users",
+                        to="accounts.company",
+                        verbose_name="Empresas",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Usuário',
-                'verbose_name_plural': 'Usuários',
-                'ordering': ['username'],
+                "verbose_name": "Usuário",
+                "verbose_name_plural": "Usuários",
+                "ordering": ["username"],
             },
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
     ]

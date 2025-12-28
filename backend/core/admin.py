@@ -1,6 +1,7 @@
 """
 Configurações personalizadas do Django Admin
 """
+
 from django.contrib import admin
 
 # Personalização do site admin

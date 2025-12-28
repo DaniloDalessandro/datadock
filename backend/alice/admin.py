@@ -1,7 +1,6 @@
 """
 Alice Admin Configuration
 """
-from django.contrib import admin
 
 # Alice AI Assistant app
 # This app provides AI-powered chat assistance using Google Gemini

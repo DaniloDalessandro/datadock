@@ -9,140 +9,335 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0003_remove_company_address_and_more'),
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("accounts", "0003_remove_company_address_and_more"),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ExternalProfile',
+            name="ExternalProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('company_name', models.CharField(help_text='Nome da empresa do usuário externo', max_length=200, verbose_name='Nome da Empresa')),
-                ('external_type', models.CharField(choices=[('operador', 'Operador'), ('agencia', 'Agência'), ('cliente', 'Cliente')], help_text='Tipo de usuário externo', max_length=20, verbose_name='Tipo')),
-                ('cnpj', models.CharField(blank=True, help_text='CNPJ da empresa (Formato: 00.000.000/0000-00)', max_length=18, null=True, validators=[django.core.validators.RegexValidator(message='CNPJ deve estar no formato: 00.000.000/0000-00', regex='^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$')], verbose_name='CNPJ')),
-                ('contact_person', models.CharField(blank=True, help_text='Nome da pessoa de contato na empresa', max_length=200, null=True, verbose_name='Pessoa de Contato')),
-                ('notes', models.TextField(blank=True, help_text='Observações adicionais sobre o perfil externo', null=True, verbose_name='Observações')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "company_name",
+                    models.CharField(
+                        help_text="Nome da empresa do usuário externo",
+                        max_length=200,
+                        verbose_name="Nome da Empresa",
+                    ),
+                ),
+                (
+                    "external_type",
+                    models.CharField(
+                        choices=[
+                            ("operador", "Operador"),
+                            ("agencia", "Agência"),
+                            ("cliente", "Cliente"),
+                        ],
+                        help_text="Tipo de usuário externo",
+                        max_length=20,
+                        verbose_name="Tipo",
+                    ),
+                ),
+                (
+                    "cnpj",
+                    models.CharField(
+                        blank=True,
+                        help_text="CNPJ da empresa (Formato: 00.000.000/0000-00)",
+                        max_length=18,
+                        null=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="CNPJ deve estar no formato: 00.000.000/0000-00",
+                                regex="^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$",
+                            )
+                        ],
+                        verbose_name="CNPJ",
+                    ),
+                ),
+                (
+                    "contact_person",
+                    models.CharField(
+                        blank=True,
+                        help_text="Nome da pessoa de contato na empresa",
+                        max_length=200,
+                        null=True,
+                        verbose_name="Pessoa de Contato",
+                    ),
+                ),
+                (
+                    "notes",
+                    models.TextField(
+                        blank=True,
+                        help_text="Observações adicionais sobre o perfil externo",
+                        null=True,
+                        verbose_name="Observações",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Criado em"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Atualizado em"),
+                ),
             ],
             options={
-                'verbose_name': 'Perfil Externo',
-                'verbose_name_plural': 'Perfis Externos',
-                'ordering': ['company_name'],
+                "verbose_name": "Perfil Externo",
+                "verbose_name_plural": "Perfis Externos",
+                "ordering": ["company_name"],
             },
         ),
         migrations.CreateModel(
-            name='InternalProfile',
+            name="InternalProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('department', models.CharField(blank=True, help_text='Departamento do usuário interno', max_length=100, null=True, verbose_name='Departamento')),
-                ('position', models.CharField(blank=True, help_text='Cargo do usuário na organização', max_length=100, null=True, verbose_name='Cargo')),
-                ('employee_id', models.CharField(blank=True, help_text='Número de matrícula do funcionário', max_length=50, null=True, unique=True, verbose_name='Matrícula')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Criado em')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Atualizado em')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "department",
+                    models.CharField(
+                        blank=True,
+                        help_text="Departamento do usuário interno",
+                        max_length=100,
+                        null=True,
+                        verbose_name="Departamento",
+                    ),
+                ),
+                (
+                    "position",
+                    models.CharField(
+                        blank=True,
+                        help_text="Cargo do usuário na organização",
+                        max_length=100,
+                        null=True,
+                        verbose_name="Cargo",
+                    ),
+                ),
+                (
+                    "employee_id",
+                    models.CharField(
+                        blank=True,
+                        help_text="Número de matrícula do funcionário",
+                        max_length=50,
+                        null=True,
+                        unique=True,
+                        verbose_name="Matrícula",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Criado em"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Atualizado em"),
+                ),
             ],
             options={
-                'verbose_name': 'Perfil Interno',
-                'verbose_name_plural': 'Perfis Internos',
-                'ordering': ['user__username'],
+                "verbose_name": "Perfil Interno",
+                "verbose_name_plural": "Perfis Internos",
+                "ordering": ["user__username"],
             },
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='profile_type',
-            field=models.CharField(choices=[('interno', 'Interno'), ('externo', 'Externo')], default='interno', help_text='Define se o usuário é interno ou externo à organização', max_length=10, verbose_name='Tipo de Perfil'),
+            model_name="customuser",
+            name="profile_type",
+            field=models.CharField(
+                choices=[("interno", "Interno"), ("externo", "Externo")],
+                default="interno",
+                help_text="Define se o usuário é interno ou externo à organização",
+                max_length=10,
+                verbose_name="Tipo de Perfil",
+            ),
         ),
         migrations.AlterField(
-            model_name='company',
-            name='cnpj',
-            field=models.CharField(help_text='Formato: 00.000.000/0000-00', max_length=18, unique=True, validators=[django.core.validators.RegexValidator(message='CNPJ deve estar no formato: 00.000.000/0000-00', regex='^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$')], verbose_name='CNPJ'),
+            model_name="company",
+            name="cnpj",
+            field=models.CharField(
+                help_text="Formato: 00.000.000/0000-00",
+                max_length=18,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="CNPJ deve estar no formato: 00.000.000/0000-00",
+                        regex="^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$",
+                    )
+                ],
+                verbose_name="CNPJ",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='companies',
-            field=models.ManyToManyField(blank=True, help_text='Empresas associadas ao usuário (aplicável apenas para perfis externos)', related_name='users', to='accounts.company', verbose_name='Empresas'),
+            model_name="customuser",
+            name="companies",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Empresas associadas ao usuário (aplicável apenas para perfis externos)",
+                related_name="users",
+                to="accounts.company",
+                verbose_name="Empresas",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='cpf',
-            field=models.CharField(blank=True, help_text='Formato: 000.000.000-00', max_length=14, null=True, unique=True, validators=[django.core.validators.RegexValidator(message='CPF deve estar no formato: 000.000.000-00', regex='^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$')], verbose_name='CPF'),
+            model_name="customuser",
+            name="cpf",
+            field=models.CharField(
+                blank=True,
+                help_text="Formato: 000.000.000-00",
+                max_length=14,
+                null=True,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="CPF deve estar no formato: 000.000.000-00",
+                        regex="^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$",
+                    )
+                ],
+                verbose_name="CPF",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='must_change_password',
-            field=models.BooleanField(default=False, help_text='Indica se o usuário precisa alterar a senha no próximo login', verbose_name='Deve alterar senha'),
+            model_name="customuser",
+            name="must_change_password",
+            field=models.BooleanField(
+                default=False,
+                help_text="Indica se o usuário precisa alterar a senha no próximo login",
+                verbose_name="Deve alterar senha",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='phone',
-            field=models.CharField(blank=True, help_text='Formato: (00) 00000-0000', max_length=20, null=True, validators=[django.core.validators.RegexValidator(message='Telefone deve estar no formato: (00) 00000-0000 ou (00) 0000-0000', regex='^\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}$')], verbose_name='Telefone'),
+            model_name="customuser",
+            name="phone",
+            field=models.CharField(
+                blank=True,
+                help_text="Formato: (00) 00000-0000",
+                max_length=20,
+                null=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="Telefone deve estar no formato: (00) 00000-0000 ou (00) 0000-0000",
+                        regex="^\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}$",
+                    )
+                ],
+                verbose_name="Telefone",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='reset_password_token',
-            field=models.CharField(blank=True, db_index=True, max_length=100, null=True, verbose_name='Token de Redefinição'),
+            model_name="customuser",
+            name="reset_password_token",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                max_length=100,
+                null=True,
+                verbose_name="Token de Redefinição",
+            ),
         ),
         migrations.AddIndex(
-            model_name='company',
-            index=models.Index(fields=['name'], name='accounts_co_name_a6c199_idx'),
+            model_name="company",
+            index=models.Index(fields=["name"], name="accounts_co_name_a6c199_idx"),
         ),
         migrations.AddIndex(
-            model_name='company',
-            index=models.Index(fields=['cnpj'], name='accounts_co_cnpj_3c1d53_idx'),
+            model_name="company",
+            index=models.Index(fields=["cnpj"], name="accounts_co_cnpj_3c1d53_idx"),
         ),
         migrations.AddIndex(
-            model_name='company',
-            index=models.Index(fields=['is_active'], name='accounts_co_is_acti_4abc2f_idx'),
+            model_name="company",
+            index=models.Index(
+                fields=["is_active"], name="accounts_co_is_acti_4abc2f_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['username'], name='accounts_cu_usernam_ab560e_idx'),
+            model_name="customuser",
+            index=models.Index(
+                fields=["username"], name="accounts_cu_usernam_ab560e_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['email'], name='accounts_cu_email_5ce40b_idx'),
+            model_name="customuser",
+            index=models.Index(fields=["email"], name="accounts_cu_email_5ce40b_idx"),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['profile_type'], name='accounts_cu_profile_5376c8_idx'),
+            model_name="customuser",
+            index=models.Index(
+                fields=["profile_type"], name="accounts_cu_profile_5376c8_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['is_active'], name='accounts_cu_is_acti_2885e2_idx'),
+            model_name="customuser",
+            index=models.Index(
+                fields=["is_active"], name="accounts_cu_is_acti_2885e2_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='customuser',
-            index=models.Index(fields=['created_at'], name='accounts_cu_created_35a2d8_idx'),
+            model_name="customuser",
+            index=models.Index(
+                fields=["created_at"], name="accounts_cu_created_35a2d8_idx"
+            ),
         ),
         migrations.AddField(
-            model_name='externalprofile',
-            name='user',
-            field=models.OneToOneField(limit_choices_to={'profile_type': 'externo'}, on_delete=django.db.models.deletion.CASCADE, related_name='external_profile', to=settings.AUTH_USER_MODEL, verbose_name='Usuário'),
+            model_name="externalprofile",
+            name="user",
+            field=models.OneToOneField(
+                limit_choices_to={"profile_type": "externo"},
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="external_profile",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Usuário",
+            ),
         ),
         migrations.AddField(
-            model_name='internalprofile',
-            name='user',
-            field=models.OneToOneField(limit_choices_to={'profile_type': 'interno'}, on_delete=django.db.models.deletion.CASCADE, related_name='internal_profile', to=settings.AUTH_USER_MODEL, verbose_name='Usuário'),
+            model_name="internalprofile",
+            name="user",
+            field=models.OneToOneField(
+                limit_choices_to={"profile_type": "interno"},
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="internal_profile",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Usuário",
+            ),
         ),
         migrations.AddIndex(
-            model_name='externalprofile',
-            index=models.Index(fields=['company_name'], name='accounts_ex_company_9ebbd2_idx'),
+            model_name="externalprofile",
+            index=models.Index(
+                fields=["company_name"], name="accounts_ex_company_9ebbd2_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='externalprofile',
-            index=models.Index(fields=['external_type'], name='accounts_ex_externa_a421a8_idx'),
+            model_name="externalprofile",
+            index=models.Index(
+                fields=["external_type"], name="accounts_ex_externa_a421a8_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='externalprofile',
-            index=models.Index(fields=['cnpj'], name='accounts_ex_cnpj_562a05_idx'),
+            model_name="externalprofile",
+            index=models.Index(fields=["cnpj"], name="accounts_ex_cnpj_562a05_idx"),
         ),
         migrations.AddIndex(
-            model_name='internalprofile',
-            index=models.Index(fields=['employee_id'], name='accounts_in_employe_d9adfd_idx'),
+            model_name="internalprofile",
+            index=models.Index(
+                fields=["employee_id"], name="accounts_in_employe_d9adfd_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='internalprofile',
-            index=models.Index(fields=['department'], name='accounts_in_departm_fe2110_idx'),
+            model_name="internalprofile",
+            index=models.Index(
+                fields=["department"], name="accounts_in_departm_fe2110_idx"
+            ),
         ),
     ]

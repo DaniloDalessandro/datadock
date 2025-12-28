@@ -1,10 +1,12 @@
 """
 Cache utilities for data_import app
 """
-from django.core.cache import cache
-from functools import wraps
+
 import hashlib
 import json
+from functools import wraps
+
+from django.core.cache import cache
 
 
 def make_cache_key(prefix, **kwargs):
@@ -17,7 +19,7 @@ def make_cache_key(prefix, **kwargs):
     return f"{prefix}:{params_hash}"
 
 
-def cache_view_result(timeout=300, key_prefix='view'):
+def cache_view_result(timeout=300, key_prefix="view"):
     """
     Decorator to cache view results
     Usage:
@@ -25,14 +27,15 @@ def cache_view_result(timeout=300, key_prefix='view'):
         def get(self, request):
             ...
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(self, request, *args, **kwargs):
             # Build cache key from request parameters
             cache_params = {
-                'path': request.path,
-                'query': dict(request.GET),
-                'user_id': request.user.id if request.user.is_authenticated else None,
+                "path": request.path,
+                "query": dict(request.GET),
+                "user_id": request.user.id if request.user.is_authenticated else None,
             }
             cache_key = make_cache_key(key_prefix, **cache_params)
 
@@ -46,7 +49,9 @@ def cache_view_result(timeout=300, key_prefix='view'):
             cache.set(cache_key, result, timeout)
 
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -67,10 +72,10 @@ def invalidate_process_caches(process_id=None):
     Invalidate caches related to data import processes
     """
     patterns = [
-        'view:process_list',
-        'view:process_detail',
-        'view:process_data',
-        'view:analytics',
+        "view:process_list",
+        "view:process_detail",
+        "view:process_data",
+        "view:analytics",
     ]
 
     for pattern in patterns:
@@ -78,5 +83,5 @@ def invalidate_process_caches(process_id=None):
 
     # Also invalidate specific process cache if provided
     if process_id:
-        cache.delete(f'process:{process_id}')
-        cache.delete(f'process_data:{process_id}')
+        cache.delete(f"process:{process_id}")
+        cache.delete(f"process_data:{process_id}")

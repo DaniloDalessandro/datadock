@@ -10,144 +10,146 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 if not SECRET_KEY:
-    raise ValueError('DJANGO_SECRET_KEY environment variable is not set. Please check your .env file.')
+    raise ValueError(
+        "DJANGO_SECRET_KEY environment variable is not set. Please check your .env file."
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third party apps
-    'rest_framework',
-    'corsheaders',
-    'drf_spectacular',
-    'django_filters',
-
-    #MY APPS
-    'accounts',
-    'data_import',
-    'alice',
+    "rest_framework",
+    "corsheaders",
+    "drf_spectacular",
+    "django_filters",
+    # MY APPS
+    "accounts",
+    "data_import",
+    "alice",
 ]
 
 # Custom user model
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTH_USER_MODEL = "accounts.CustomUser"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Custom middleware
-    'core.middleware.RequestIDMiddleware',
-    'core.middleware.APIVersionMiddleware',
+    "core.middleware.RequestIDMiddleware",
+    "core.middleware.APIVersionMiddleware",
 ]
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = "core.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'core.context_processors.admin_stats',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "core.context_processors.admin_stats",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = "core.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
 # Cache configuration with Redis (fallback to local memory if Redis not available)
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 # Try to use Redis, fallback to local memory cache if not available
 try:
     import redis
+
     r = redis.Redis.from_url(REDIS_URL, socket_connect_timeout=1)
     r.ping()
 
     # Redis is available
     CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'SOCKET_CONNECT_TIMEOUT': 5,
-                'SOCKET_TIMEOUT': 5,
-                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-                'CONNECTION_POOL_KWARGS': {
-                    'max_connections': 50,
-                    'retry_on_timeout': True,
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_CONNECT_TIMEOUT": 5,
+                "SOCKET_TIMEOUT": 5,
+                "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+                "CONNECTION_POOL_KWARGS": {
+                    "max_connections": 50,
+                    "retry_on_timeout": True,
                 },
             },
-            'KEY_PREFIX': 'dataport',
-            'TIMEOUT': 300,
+            "KEY_PREFIX": "dataport",
+            "TIMEOUT": 300,
         }
     }
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
     print("[OK] Redis conectado - usando cache Redis")
-except Exception as e:
+except Exception:
     # Redis not available, use local memory cache
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'dataport-cache',
-            'TIMEOUT': 300,
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "dataport-cache",
+            "TIMEOUT": 300,
         }
     }
-    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-    print(f"[INFO] Redis nao disponivel - usando cache em memoria local")
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
+    print("[INFO] Redis nao disponivel - usando cache em memoria local")
 
 
 # Password validation
@@ -155,16 +157,16 @@ except Exception as e:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -172,9 +174,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'pt-br'
+LANGUAGE_CODE = "pt-br"
 
-TIME_ZONE = 'America/Sao_Paulo'
+TIME_ZONE = "America/Sao_Paulo"
 
 USE_I18N = True
 
@@ -184,38 +186,40 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS Settings
-cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',')]
+cors_origins = os.environ.get(
+    "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+)
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
 
 CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework Settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
     # API Documentation
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # API Documentation Settings
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'DataPort API',
-    'DESCRIPTION': '''
+    "TITLE": "DataPort API",
+    "DESCRIPTION": """
     Sistema de gerenciamento e importação de dados com suporte a múltiplas fontes.
 
     ## Recursos Principais
@@ -229,34 +233,34 @@ SPECTACULAR_SETTINGS = {
     ## Versões da API
     - **v1**: Versão atual (estável)
     - URLs legadas sem prefixo de versão serão descontinuadas
-    ''',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SWAGGER_UI_SETTINGS': {
-        'deepLinking': True,
-        'persistAuthorization': True,
-        'displayOperationId': True,
-        'filter': True,
+    """,
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayOperationId": True,
+        "filter": True,
     },
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SORT_OPERATIONS': False,
-    'SERVERS': [
-        {
-            'url': 'http://localhost:8000',
-            'description': 'Development server'
-        },
-        {
-            'url': 'http://localhost:8000/api/v1',
-            'description': 'API v1 (recommended)'
-        },
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Development server"},
+        {"url": "http://localhost:8000/api/v1", "description": "API v1 (recommended)"},
     ],
-    'TAGS': [
-        {'name': 'Authentication', 'description': 'Endpoints de autenticação e gerenciamento de usuários'},
-        {'name': 'Data Import', 'description': 'Importação e gerenciamento de datasets'},
-        {'name': 'Search & Filter', 'description': 'Busca e filtragem de dados'},
-        {'name': 'Analytics', 'description': 'Estatísticas e dashboards'},
-        {'name': 'Health', 'description': 'Health checks e monitoramento'},
-        {'name': 'Tasks', 'description': 'Gerenciamento de tasks assíncronas'},
+    "TAGS": [
+        {
+            "name": "Authentication",
+            "description": "Endpoints de autenticação e gerenciamento de usuários",
+        },
+        {
+            "name": "Data Import",
+            "description": "Importação e gerenciamento de datasets",
+        },
+        {"name": "Search & Filter", "description": "Busca e filtragem de dados"},
+        {"name": "Analytics", "description": "Estatísticas e dashboards"},
+        {"name": "Health", "description": "Health checks e monitoramento"},
+        {"name": "Tasks", "description": "Gerenciamento de tasks assíncronas"},
     ],
 }
 
@@ -264,22 +268,22 @@ SPECTACULAR_SETTINGS = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
 }
 
 # Email Configuration
 # Para desenvolvimento, use o console backend
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Para produção, configure um servidor SMTP real:
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -290,17 +294,19 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
 # DEFAULT_FROM_EMAIL = 'seu-email@gmail.com'
 
-DEFAULT_FROM_EMAIL = 'noreply@dataport.com'
+DEFAULT_FROM_EMAIL = "noreply@dataport.com"
 
 # Frontend URL para links de redefinicao de senha
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # Celery Configuration
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/1')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/1"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max
@@ -312,55 +318,68 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Re-queue task if worker crashes
 
 # Structured Logging Configuration
 import os
-LOGS_DIR = BASE_DIR / 'logs'
+
+LOGS_DIR = BASE_DIR / "logs"
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '[{asctime}] {levelname} {name} {module}.{funcName}:{lineno} - {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {module}.{funcName}:{lineno} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'dataport.log'),
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 5,
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'data_import': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'accounts': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "dataport.log"),
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 5,
+            "formatter": "verbose",
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "data_import": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "alice": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
     },
 }
+
+# =============================================================================
+# AI & Vector Database Configuration
+# =============================================================================
+
+# Google Gemini é usado tanto para chat quanto para embeddings vetoriais (RAG)
+# Configure GEMINI_API_KEY no arquivo .env

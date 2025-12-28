@@ -8,28 +8,56 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='company',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='companies_created', to=settings.AUTH_USER_MODEL, verbose_name='Criado por'),
+            model_name="company",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="companies_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Criado por",
+            ),
         ),
         migrations.AddField(
-            model_name='company',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='companies_updated', to=settings.AUTH_USER_MODEL, verbose_name='Atualizado por'),
+            model_name="company",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="companies_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Atualizado por",
+            ),
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users_created', to=settings.AUTH_USER_MODEL, verbose_name='Criado por'),
+            model_name="customuser",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Criado por",
+            ),
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users_updated', to=settings.AUTH_USER_MODEL, verbose_name='Atualizado por'),
+            model_name="customuser",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Atualizado por",
+            ),
         ),
     ]

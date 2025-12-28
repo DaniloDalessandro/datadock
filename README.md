@@ -101,6 +101,19 @@
 - ✅ Lazy loading de dados
 - ✅ Gzip compression
 
+### 🤖 Alice AI Assistant (RAG)
+
+- ✅ Assistente virtual inteligente powered by Google Gemini
+- ✅ **RAG (Retrieval Augmented Generation)** com busca vetorial
+- ✅ Busca semântica usando pgvector (PostgreSQL)
+- ✅ Embeddings com Google Gemini (models/embedding-001)
+- ✅ Auto-indexação de datasets com Django Signals
+- ✅ Respostas contextualizadas baseadas em dados reais
+- ✅ Top 5 datasets mais relevantes por pergunta
+- ✅ Comando de gerenciamento para indexar datasets existentes
+- ✅ Health check para verificar configurações AI
+- ✅ **100% Gemini** - Sem dependência de OpenAI
+
 ---
 
 ## 🛠️ Tecnologias
@@ -118,6 +131,8 @@
 | Gunicorn | 23.0 | WSGI server (produção) |
 | Pandas | 2.2 | Processamento de dados |
 | openpyxl | 3.1 | Manipulação de Excel |
+| **pgvector** | 0.3.6 | **Busca vetorial (RAG)** |
+| **Google Gemini** | Latest | **Chat + Embeddings (100% Gemini)** |
 
 ### Frontend
 
@@ -679,6 +694,167 @@ curl http://localhost:8000/api/data-import/processes/1/download/ \
   -H "Authorization: Bearer $TOKEN" \
   -o dados.csv
 ```
+
+---
+
+## 🤖 Alice AI Assistant com RAG
+
+Alice é a assistente virtual inteligente do DataDock, powered by **Google Gemini** com **RAG (Retrieval Augmented Generation)** para busca semântica.
+
+### 🎯 O que é RAG?
+
+RAG combina:
+- **Busca Vetorial**: Encontra datasets semanticamente similares à pergunta
+- **LLM (Gemini)**: Gera respostas naturais baseadas nos dados encontrados
+- **Contextualização**: Respostas precisas usando dados reais do sistema
+
+### 🔧 Configuração
+
+#### 1. Instalar dependências
+
+```bash
+cd backend
+pip install pgvector==0.3.6
+```
+
+#### 2. Configurar variáveis de ambiente
+
+Adicione ao `.env`:
+
+```bash
+# Google Gemini API Key (usado para chat E embeddings)
+GEMINI_API_KEY=sua-chave-gemini-aqui
+```
+
+**Como obter a chave:**
+- **Gemini API Key**: https://makersuite.google.com/app/apikey (GRÁTIS)
+
+#### 3. Aplicar migrações
+
+```bash
+python manage.py migrate alice
+```
+
+Isso habilita a extensão `pgvector` no PostgreSQL.
+
+#### 4. Indexar datasets existentes
+
+```bash
+# Indexar todos os datasets completos
+python manage.py index_datasets
+
+# Reindexar tudo (incluindo já indexados)
+python manage.py index_datasets --all
+
+# Indexar dataset específico por ID
+python manage.py index_datasets --dataset-id 123
+
+# Indexar dataset específico por nome
+python manage.py index_datasets --table-name data001
+```
+
+### 📊 Como funciona
+
+1. **Pergunta do usuário**: "Quais dados de importação temos?"
+2. **Embedding da pergunta**: Gemini gera vetor de 768 dimensões (models/embedding-001)
+3. **Busca vetorial**: pgvector encontra top 5 datasets similares via L2Distance
+4. **Contexto enriquecido**: Monta contexto com datasets relevantes
+5. **Resposta AI**: Gemini gera resposta natural baseada no contexto
+
+### 🔍 Endpoints
+
+#### Chat com Alice
+
+```bash
+POST /api/alice/chat/
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "message": "Quais datasets de navegação temos disponíveis?"
+}
+```
+
+**Resposta:**
+
+```json
+{
+  "success": true,
+  "response": "Encontrei **3 datasets** de navegação:\n\n1. **data_navegacao_2024** - 15.234 registros\n2. **shipping_logs** - 8.901 registros\n3. **vessel_tracking** - 23.456 registros\n\nTodos contêm dados atualizados de movimentação portuária.",
+  "timestamp": "2025-12-28T10:30:00Z"
+}
+```
+
+#### Health Check
+
+```bash
+GET /api/alice/health/
+Authorization: Bearer <token>
+```
+
+**Resposta:**
+
+```json
+{
+  "status": "healthy",
+  "service": "Alice AI Assistant",
+  "gemini_configured": true,
+  "rag_enabled": true,
+  "embedding_model": "Google Gemini models/embedding-001",
+  "timestamp": "2025-12-28T10:30:00Z"
+}
+```
+
+### 🚀 Indexação Automática
+
+Datasets são **automaticamente indexados** quando:
+- ✅ Status muda para `completed`
+- ✅ Dataset é criado via upload/API
+- ✅ Dataset é atualizado
+
+Implementado via **Django Signals** em `alice/signals.py`.
+
+### 📁 Arquitetura
+
+```
+alice/
+├── models.py              # DatasetEmbedding model (VectorField)
+├── views.py               # AliceChatView com RAG
+├── services/
+│   └── vector_service.py  # VectorService (embeddings, busca)
+├── signals.py             # Auto-indexação
+├── migrations/
+│   └── 0001_enable_vector_extension.py
+└── management/
+    └── commands/
+        └── index_datasets.py  # Comando de indexação
+```
+
+### 🎨 Modelo de Embedding
+
+```python
+class DatasetEmbedding(models.Model):
+    dataset = OneToOneField('DataImportProcess')  # Relação 1:1
+    description = TextField()                     # Descrição textual
+    embedding = VectorField(dimensions=768)       # Vetor Gemini
+    metadata = JSONField()                        # Metadados adicionais
+    created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
+```
+
+### 💡 Dicas
+
+- **Custo**: Gemini Embeddings são **GRATUITOS** (até 1500 requisições/dia)
+- **Performance**: Busca vetorial é extremamente rápida (ms)
+- **Precisão**: RAG retorna apenas datasets relevantes
+- **Fallback**: Se RAG falhar, usa contexto tradicional
+- **100% Gemini**: Uma única API key para tudo (chat + embeddings)
+
+### 🔒 Rate Limiting
+
+- **30 requisições/minuto** por usuário
+- Retry automático com exponential backoff
+- Cache de contexto (5 minutos)
 
 ---
 

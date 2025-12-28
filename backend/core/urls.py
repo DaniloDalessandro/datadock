@@ -14,40 +14,44 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import path, include
-from core.views import (
-    HealthCheckView, DetailedHealthCheckView,
-    ReadinessCheckView, LivenessCheckView
-)
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
-    SpectacularSwaggerView,
     SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+from core.views import (
+    DetailedHealthCheckView,
+    HealthCheckView,
+    LivenessCheckView,
+    ReadinessCheckView,
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls, name='admin:index'),
-
+    path("admin/", admin.site.urls, name="admin:index"),
     # API Documentation (Swagger/OpenAPI)
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # Health check endpoints (no authentication required)
-    path('health/', HealthCheckView.as_view(), name='health-check'),
-    path('health/detailed/', DetailedHealthCheckView.as_view(), name='health-detailed'),
-    path('health/ready/', ReadinessCheckView.as_view(), name='health-ready'),
-    path('health/live/', LivenessCheckView.as_view(), name='health-live'),
-
+    path("health/", HealthCheckView.as_view(), name="health-check"),
+    path("health/detailed/", DetailedHealthCheckView.as_view(), name="health-detailed"),
+    path("health/ready/", ReadinessCheckView.as_view(), name="health-ready"),
+    path("health/live/", LivenessCheckView.as_view(), name="health-live"),
     # API v1 - Versioned endpoints
-    path('api/v1/auth/', include('accounts.urls')),
-    path('api/v1/data-import/', include('data_import.urls')),
-    path('api/v1/alice/', include('alice.urls')),
-
+    path("api/v1/auth/", include("accounts.urls")),
+    path("api/v1/data-import/", include("data_import.urls")),
+    path("api/v1/alice/", include("alice.urls")),
     # Legacy endpoints (backward compatibility) - will be deprecated
     # These redirect to v1 automatically
-    path('api/auth/', include('accounts.urls')),
-    path('api/data-import/', include('data_import.urls')),
-    path('api/alice/', include('alice.urls')),
+    path("api/auth/", include("accounts.urls")),
+    path("api/data-import/", include("data_import.urls")),
+    path("api/alice/", include("alice.urls")),
 ]

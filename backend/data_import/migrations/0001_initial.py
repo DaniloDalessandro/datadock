@@ -15,23 +15,97 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='DataImportProcess',
+            name="DataImportProcess",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('table_name', models.CharField(help_text='Nome da tabela criada no banco de dados', max_length=255, verbose_name='Nome da Tabela')),
-                ('endpoint_url', models.URLField(help_text='URL do endpoint externo de onde os dados foram importados', max_length=500, verbose_name='URL do Endpoint')),
-                ('status', models.CharField(choices=[('pending', 'Pendente'), ('processing', 'Processando'), ('success', 'Sucesso'), ('error', 'Erro')], default='pending', max_length=20, verbose_name='Status')),
-                ('record_count', models.IntegerField(default=0, help_text='Número de registros importados', verbose_name='Quantidade de Registros')),
-                ('column_structure', models.JSONField(default=dict, help_text='Estrutura JSON das colunas criadas', verbose_name='Estrutura das Colunas')),
-                ('error_message', models.TextField(blank=True, null=True, verbose_name='Mensagem de Erro')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Data de Atualização')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='data_imports', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "table_name",
+                    models.CharField(
+                        help_text="Nome da tabela criada no banco de dados",
+                        max_length=255,
+                        verbose_name="Nome da Tabela",
+                    ),
+                ),
+                (
+                    "endpoint_url",
+                    models.URLField(
+                        help_text="URL do endpoint externo de onde os dados foram importados",
+                        max_length=500,
+                        verbose_name="URL do Endpoint",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pendente"),
+                            ("processing", "Processando"),
+                            ("success", "Sucesso"),
+                            ("error", "Erro"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                        verbose_name="Status",
+                    ),
+                ),
+                (
+                    "record_count",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Número de registros importados",
+                        verbose_name="Quantidade de Registros",
+                    ),
+                ),
+                (
+                    "column_structure",
+                    models.JSONField(
+                        default=dict,
+                        help_text="Estrutura JSON das colunas criadas",
+                        verbose_name="Estrutura das Colunas",
+                    ),
+                ),
+                (
+                    "error_message",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Mensagem de Erro"
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="Data de Criação"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Data de Atualização"
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="data_imports",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Criado por",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Processo de Importação',
-                'verbose_name_plural': 'Processos de Importação',
-                'ordering': ['-created_at'],
+                "verbose_name": "Processo de Importação",
+                "verbose_name_plural": "Processos de Importação",
+                "ordering": ["-created_at"],
             },
         ),
     ]

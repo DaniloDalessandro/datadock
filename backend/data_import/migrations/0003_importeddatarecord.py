@@ -7,25 +7,69 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_import', '0002_alter_dataimportprocess_status'),
+        ("data_import", "0002_alter_dataimportprocess_status"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ImportedDataRecord',
+            name="ImportedDataRecord",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('data', models.JSONField(help_text='Dados do registro em formato JSON', verbose_name='Dados')),
-                ('row_hash', models.CharField(db_index=True, help_text='Hash MD5 dos dados para detecção de duplicatas', max_length=64, verbose_name='Hash do Registro')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')),
-                ('process', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='records', to='data_import.dataimportprocess', verbose_name='Processo de Importação')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "data",
+                    models.JSONField(
+                        help_text="Dados do registro em formato JSON",
+                        verbose_name="Dados",
+                    ),
+                ),
+                (
+                    "row_hash",
+                    models.CharField(
+                        db_index=True,
+                        help_text="Hash MD5 dos dados para detecção de duplicatas",
+                        max_length=64,
+                        verbose_name="Hash do Registro",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="Data de Criação"
+                    ),
+                ),
+                (
+                    "process",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="records",
+                        to="data_import.dataimportprocess",
+                        verbose_name="Processo de Importação",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Registro Importado',
-                'verbose_name_plural': 'Registros Importados',
-                'ordering': ['created_at'],
-                'indexes': [models.Index(fields=['process', 'row_hash'], name='data_import_process_02e4d8_idx'), models.Index(fields=['process', 'created_at'], name='data_import_process_b0d7c2_idx')],
-                'unique_together': {('process', 'row_hash')},
+                "verbose_name": "Registro Importado",
+                "verbose_name_plural": "Registros Importados",
+                "ordering": ["created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["process", "row_hash"],
+                        name="data_import_process_02e4d8_idx",
+                    ),
+                    models.Index(
+                        fields=["process", "created_at"],
+                        name="data_import_process_b0d7c2_idx",
+                    ),
+                ],
+                "unique_together": {("process", "row_hash")},
             },
         ),
     ]

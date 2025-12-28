@@ -1,0 +1,45 @@
+# Pre-commit hooks para garantir qualidade de código
+# Instalação:
+#   1. pip install pre-commit
+#   2. pre-commit install
+#
+# Executar manualmente: pre-commit run --all-files
+
+repos:
+  # Black - Formatador de código Python
+  - repo: https://github.com/psf/black
+    rev: 25.12.0
+    hooks:
+      - id: black
+        language_version: python3
+        exclude: ^(.*migrations.*|venv/|.venv/)
+
+  # isort - Organizador de imports
+  - repo: https://github.com/PyCQA/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+        exclude: ^(.*migrations.*|venv/|.venv/)
+
+  # Flake8 - Linter PEP 8
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-docstrings]
+        exclude: ^(.*migrations.*|venv/|.venv/)
+        args: ['--config=.flake8']
+
+  # Hooks gerais
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace  # Remove espaços no final das linhas
+      - id: end-of-file-fixer     # Adiciona linha em branco no final dos arquivos
+      - id: check-yaml            # Valida sintaxe de arquivos YAML
+      - id: check-added-large-files  # Previne commit de arquivos grandes
+        args: ['--maxkb=1000']
+      - id: check-json            # Valida sintaxe de arquivos JSON
+      - id: check-merge-conflict  # Detecta marcadores de conflito de merge
+      - id: debug-statements      # Detecta breakpoints esquecidos

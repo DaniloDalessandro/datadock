@@ -7,23 +7,51 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_remove_company_accounts_co_name_a6c199_idx_and_more'),
+        ("accounts", "0005_remove_company_accounts_co_name_a6c199_idx_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='company',
-            name='cnpj',
-            field=models.CharField(db_index=True, help_text='CNPJ da empresa (Formato: 00.000.000/0000-00)', max_length=18, unique=True, validators=[django.core.validators.RegexValidator(message='CNPJ deve estar no formato: 00.000.000/0000-00', regex='^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$')], verbose_name='CNPJ'),
+            model_name="company",
+            name="cnpj",
+            field=models.CharField(
+                db_index=True,
+                help_text="CNPJ da empresa (Formato: 00.000.000/0000-00)",
+                max_length=18,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="CNPJ deve estar no formato: 00.000.000/0000-00",
+                        regex="^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$",
+                    )
+                ],
+                verbose_name="CNPJ",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='cpf',
-            field=models.CharField(blank=True, db_index=True, help_text='CPF do usuário (Formato: 000.000.000-00)', max_length=14, null=True, unique=True, validators=[django.core.validators.RegexValidator(message='CPF deve estar no formato: 000.000.000-00', regex='^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$')], verbose_name='CPF'),
+            model_name="customuser",
+            name="cpf",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="CPF do usuário (Formato: 000.000.000-00)",
+                max_length=14,
+                null=True,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="CPF deve estar no formato: 000.000.000-00",
+                        regex="^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$",
+                    )
+                ],
+                verbose_name="CPF",
+            ),
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='email',
-            field=models.EmailField(db_index=True, max_length=254, unique=True, verbose_name='E-mail'),
+            model_name="customuser",
+            name="email",
+            field=models.EmailField(
+                db_index=True, max_length=254, unique=True, verbose_name="E-mail"
+            ),
         ),
     ]

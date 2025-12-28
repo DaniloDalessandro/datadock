@@ -7,27 +7,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_import', '0004_alter_dataimportprocess_table_name'),
+        ("data_import", "0004_alter_dataimportprocess_table_name"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dataimportprocess',
-            name='status',
-            field=models.CharField(choices=[('active', 'Ativo'), ('inactive', 'Inativo')], db_index=True, default='active', max_length=20, verbose_name='Status'),
+            model_name="dataimportprocess",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "Ativo"), ("inactive", "Inativo")],
+                db_index=True,
+                default="active",
+                max_length=20,
+                verbose_name="Status",
+            ),
         ),
         migrations.AlterField(
-            model_name='dataimportprocess',
-            name='table_name',
-            field=models.CharField(db_index=True, help_text='Nome da tabela criada no banco de dados', max_length=255, unique=True, verbose_name='Nome da Tabela'),
+            model_name="dataimportprocess",
+            name="table_name",
+            field=models.CharField(
+                db_index=True,
+                help_text="Nome da tabela criada no banco de dados",
+                max_length=255,
+                unique=True,
+                verbose_name="Nome da Tabela",
+            ),
         ),
         migrations.AddIndex(
-            model_name='dataimportprocess',
-            index=models.Index(fields=['status', 'created_at'], name='process_status_created_idx'),
+            model_name="dataimportprocess",
+            index=models.Index(
+                fields=["status", "created_at"], name="process_status_created_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='dataimportprocess',
-            index=models.Index(fields=['created_by', 'status'], name='process_user_status_idx'),
+            model_name="dataimportprocess",
+            index=models.Index(
+                fields=["created_by", "status"], name="process_user_status_idx"
+            ),
         ),
     ]

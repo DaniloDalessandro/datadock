@@ -8,32 +8,131 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_import', '0005_alter_dataimportprocess_status_and_more'),
+        ("data_import", "0005_alter_dataimportprocess_status_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AsyncTask',
+            name="AsyncTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('task_id', models.CharField(db_index=True, max_length=255, unique=True, verbose_name='ID da Task Celery')),
-                ('task_name', models.CharField(max_length=255, verbose_name='Nome da Task')),
-                ('status', models.CharField(choices=[('pending', 'Pendente'), ('started', 'Iniciado'), ('progress', 'Em Progresso'), ('success', 'Concluído com Sucesso'), ('failed', 'Falhou'), ('retrying', 'Tentando Novamente')], db_index=True, default='pending', max_length=20, verbose_name='Status')),
-                ('progress', models.IntegerField(default=0, help_text='Progresso da task de 0 a 100', verbose_name='Progresso (%)')),
-                ('result', models.JSONField(blank=True, help_text='Resultado da task em formato JSON', null=True, verbose_name='Resultado')),
-                ('error', models.TextField(blank=True, null=True, verbose_name='Mensagem de Erro')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Data de Atualização')),
-                ('completed_at', models.DateTimeField(blank=True, null=True, verbose_name='Data de Conclusão')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='async_tasks', to=settings.AUTH_USER_MODEL, verbose_name='Criado por')),
-                ('process', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='async_tasks', to='data_import.dataimportprocess', verbose_name='Processo Relacionado')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "task_id",
+                    models.CharField(
+                        db_index=True,
+                        max_length=255,
+                        unique=True,
+                        verbose_name="ID da Task Celery",
+                    ),
+                ),
+                (
+                    "task_name",
+                    models.CharField(max_length=255, verbose_name="Nome da Task"),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pendente"),
+                            ("started", "Iniciado"),
+                            ("progress", "Em Progresso"),
+                            ("success", "Concluído com Sucesso"),
+                            ("failed", "Falhou"),
+                            ("retrying", "Tentando Novamente"),
+                        ],
+                        db_index=True,
+                        default="pending",
+                        max_length=20,
+                        verbose_name="Status",
+                    ),
+                ),
+                (
+                    "progress",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Progresso da task de 0 a 100",
+                        verbose_name="Progresso (%)",
+                    ),
+                ),
+                (
+                    "result",
+                    models.JSONField(
+                        blank=True,
+                        help_text="Resultado da task em formato JSON",
+                        null=True,
+                        verbose_name="Resultado",
+                    ),
+                ),
+                (
+                    "error",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Mensagem de Erro"
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="Data de Criação"
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True, verbose_name="Data de Atualização"
+                    ),
+                ),
+                (
+                    "completed_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Data de Conclusão"
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="async_tasks",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Criado por",
+                    ),
+                ),
+                (
+                    "process",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="async_tasks",
+                        to="data_import.dataimportprocess",
+                        verbose_name="Processo Relacionado",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Task Assíncrona',
-                'verbose_name_plural': 'Tasks Assíncronas',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['task_id', 'status'], name='data_import_task_id_890a45_idx'), models.Index(fields=['created_by', 'status'], name='data_import_created_a0c52e_idx')],
+                "verbose_name": "Task Assíncrona",
+                "verbose_name_plural": "Tasks Assíncronas",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["task_id", "status"],
+                        name="data_import_task_id_890a45_idx",
+                    ),
+                    models.Index(
+                        fields=["created_by", "status"],
+                        name="data_import_created_a0c52e_idx",
+                    ),
+                ],
             },
         ),
     ]

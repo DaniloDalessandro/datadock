@@ -6,27 +6,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_company_created_by_company_updated_by_and_more'),
+        ("accounts", "0002_company_created_by_company_updated_by_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='company',
-            name='address',
+            model_name="company",
+            name="address",
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='must_change_password',
-            field=models.BooleanField(default=False, verbose_name='Deve alterar senha'),
+            model_name="customuser",
+            name="must_change_password",
+            field=models.BooleanField(default=False, verbose_name="Deve alterar senha"),
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='reset_password_token',
-            field=models.CharField(blank=True, max_length=100, null=True, verbose_name='Token de Redefinição'),
+            model_name="customuser",
+            name="reset_password_token",
+            field=models.CharField(
+                blank=True,
+                max_length=100,
+                null=True,
+                verbose_name="Token de Redefinição",
+            ),
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='reset_password_token_expires',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Token Expira em'),
+            model_name="customuser",
+            name="reset_password_token_expires",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Token Expira em"
+            ),
         ),
     ]

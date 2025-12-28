@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_import', '0001_initial'),
+        ("data_import", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dataimportprocess',
-            name='status',
-            field=models.CharField(choices=[('active', 'Ativo'), ('inactive', 'Inativo')], default='active', max_length=20, verbose_name='Status'),
+            model_name="dataimportprocess",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "Ativo"), ("inactive", "Inativo")],
+                default="active",
+                max_length=20,
+                verbose_name="Status",
+            ),
         ),
     ]

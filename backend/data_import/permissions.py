@@ -1,6 +1,7 @@
 """
 Custom permissions for data_import app
 """
+
 from rest_framework import permissions
 
 
@@ -44,7 +45,7 @@ class CanManageDatasets(permissions.BasePermission):
             return True
 
         # Check if user is in Dataset Managers group
-        return request.user.groups.filter(name='Dataset Managers').exists()
+        return request.user.groups.filter(name="Dataset Managers").exists()
 
 
 class CanDeleteDatasets(permissions.BasePermission):
@@ -68,10 +69,7 @@ class IsInternalUser(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.profile_type == 'interno'
-        )
+        return request.user.is_authenticated and request.user.profile_type == "interno"
 
 
 class IsExternalUser(permissions.BasePermission):
@@ -80,7 +78,4 @@ class IsExternalUser(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated and
-            request.user.profile_type == 'externo'
-        )
+        return request.user.is_authenticated and request.user.profile_type == "externo"
