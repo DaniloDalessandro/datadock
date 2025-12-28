@@ -15,6 +15,7 @@ import {
 
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth" // IMPORTADO
+import { config } from "@/lib/config"
 
 import {
   Avatar,
@@ -90,10 +91,8 @@ export function NavUser({
 
     // Load user data from API
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
       // O interceptor irá adicionar o cabeçalho de autorização automaticamente
-      const response = await fetch(`${API_URL}/api/auth/profile/`)
+      const response = await fetch(`${config.apiUrl}/api/auth/profile/`)
 
       if (response.ok) {
         const data = await response.json()
@@ -121,9 +120,7 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
-      const response = await fetch(`${API_URL}/api/auth/profile/`, {
+      const response = await fetch(`${config.apiUrl}/api/auth/profile/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -179,9 +176,7 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
-      const response = await fetch(`${API_URL}/api/auth/password/change/`, {
+      const response = await fetch(`${config.apiUrl}/api/auth/password/change/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

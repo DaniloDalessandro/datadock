@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ColumnFilterPopover, FilterValue } from "@/components/filters"
+import { config } from "@/lib/config"
 
 // Interfaces
 interface ColumnMetadata {
@@ -97,7 +98,7 @@ export default function SitePublicoPage() {
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const API_BASE_URL = config.apiUrl
         const response = await fetch(`${API_BASE_URL}/api/data-import/public-datasets/`)
         if (response.ok) {
           const data = await response.json()
@@ -144,7 +145,7 @@ export default function SitePublicoPage() {
     setIsSearching(true)
     setIsModalOpen(true)
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
       const response = await fetch(`${API_BASE_URL}/api/data-import/public-search/?q=${encodeURIComponent(searchQuery)}`)
       if (!response.ok) throw new Error('Erro ao buscar dados')
       const data: SearchResponse = await response.json()
@@ -170,7 +171,7 @@ export default function SitePublicoPage() {
       return
     }
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
 
       // Monta os parâmetros da URL
       const params = new URLSearchParams()
@@ -228,7 +229,7 @@ export default function SitePublicoPage() {
     setIsModalOpen(true)
     setIsSearching(true)
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
       const [dataResponse, metadataResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/api/data-import/public-data/${dataset.id}/`),
         fetch(`${API_BASE_URL}/api/data-import/public-metadata/${dataset.id}/`)

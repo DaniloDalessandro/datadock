@@ -242,87 +242,217 @@ docker-compose exec backend python manage.py createsuperuser
 
 ### Instalação Manual
 
-#### Backend
+#### Pré-requisitos
+
+- **Python 3.12+** ([Download](https://www.python.org/downloads/))
+- **Node.js 20+** ([Download](https://nodejs.org/))
+- **Git** ([Download](https://git-scm.com/))
+- **Google Gemini API Key** (Opcional - para Alice AI) - [Obter aqui](https://ai.google.dev/)
+
+---
+
+#### 📦 Passo 1: Clonar o Repositório
 
 ```bash
-# 1. Instalar Python 3.12+
-python --version
+git clone https://github.com/seu-usuario/dataport.git
+cd dataport
+```
 
-# 2. Navegar para pasta backend
+---
+
+#### 🐍 Passo 2: Configurar Backend (Django)
+
+```bash
+# 1. Navegar para pasta backend
 cd backend
 
-# 3. Criar ambiente virtual
+# 2. Criar ambiente virtual
 python -m venv venv
 
-# 4. Ativar ambiente virtual
-# Windows:
+# 3. Ativar ambiente virtual
+# Windows (CMD):
 venv\Scripts\activate
+
+# Windows (PowerShell):
+venv\Scripts\Activate.ps1
+
 # Linux/Mac:
 source venv/bin/activate
 
+# 4. Atualizar pip
+python -m pip install --upgrade pip
+
 # 5. Instalar dependências
-pip install --upgrade pip
 pip install -r requirements.txt
 
-# 6. Configurar variáveis de ambiente
-cp .env.example .env
-# Editar .env com suas configurações
+# 6. Criar arquivo .env
+# Windows:
+copy .env.example .env
 
-# 7. Executar migrações
+# Linux/Mac:
+cp .env.example .env
+
+# 7. Editar .env e configurar as variáveis
+# Abra o arquivo .env em um editor de texto e configure:
+```
+
+**Exemplo de `.env` mínimo:**
+```bash
+# Django
+DJANGO_SECRET_KEY=sua-chave-secreta-aqui-gere-uma-nova
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (SQLite - padrão)
+# Nenhuma configuração necessária, criado automaticamente
+
+# Redis (Opcional - fallback para cache em memória se não disponível)
+REDIS_URL=redis://localhost:6379/0
+
+# Google Gemini AI (Opcional - para assistente Alice)
+GEMINI_API_KEY=your-gemini-api-key-here
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Celery (Opcional)
+CELERY_BROKER_URL=redis://localhost:6379/1
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
+```
+
+**💡 Dica:** Para gerar uma chave secreta segura:
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+```bash
+# 8. Executar migrações do banco de dados
 python manage.py migrate
 
-# 8. Criar dados de exemplo (opcional)
+# 9. Criar superusuário (admin)
+python manage.py createsuperuser
+# Siga as instruções interativas
+
+# 10. (Opcional) Criar dados de exemplo
 python manage.py create_sample_data
 
-# 9. Criar superusuário
-python manage.py createsuperuser
-
-# 10. Iniciar servidor
+# 11. Iniciar servidor Django
 python manage.py runserver
 ```
 
-#### Frontend
+**✅ Backend rodando em:** `http://localhost:8000`
+
+---
+
+#### ⚛️ Passo 3: Configurar Frontend (Next.js)
+
+**Abra um NOVO terminal** (deixe o backend rodando no anterior)
 
 ```bash
-# 1. Instalar Node.js 20+
-node --version
-
-# 2. Navegar para pasta frontend
+# 1. Navegar para pasta frontend (a partir da raiz do projeto)
 cd frontend
 
-# 3. Instalar dependências
+# 2. Instalar dependências
 npm install
 
-# 4. Configurar variáveis
-cp .env.example .env.local
-# Editar .env.local:
-# NEXT_PUBLIC_API_URL=http://localhost:8000
+# 3. Criar arquivo .env.local
+# Windows:
+copy .env.example .env.local
 
-# 5. Iniciar servidor de desenvolvimento
+# Linux/Mac:
+cp .env.example .env.local
+
+# 4. Editar .env.local
+# Abra o arquivo e verifique se está assim:
+```
+
+**`.env.local`:**
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+```bash
+# 5. Iniciar servidor Next.js
 npm run dev
 ```
 
-#### Redis (Opcional mas recomendado)
+**✅ Frontend rodando em:** `http://localhost:3000`
 
+---
+
+#### 🎉 Passo 4: Acessar o Sistema
+
+Após seguir todos os passos acima, você terá:
+
+| Serviço | URL | Credenciais |
+|---------|-----|-------------|
+| **Frontend (App)** | http://localhost:3000 | Use o usuário criado no passo 9 |
+| **Backend API** | http://localhost:8000 | - |
+| **Admin Django** | http://localhost:8000/admin | Use o superusuário criado |
+| **API Docs (Swagger)** | http://localhost:8000/api/docs | - |
+| **API Schema** | http://localhost:8000/api/schema | - |
+
+---
+
+#### 🔧 Passo 5: Serviços Opcionais
+
+##### Redis (Recomendado para produção)
+
+**Opção 1 - Docker (mais fácil):**
 ```bash
-# Docker (mais fácil)
-docker run -d -p 6379:6379 redis:7-alpine
-
-# Ou instalar localmente
-# Windows: https://redis.io/docs/getting-started/installation/install-redis-on-windows/
-# Linux: sudo apt install redis-server
-# Mac: brew install redis
+docker run -d -p 6379:6379 --name redis-dataport redis:7-alpine
 ```
 
-#### Celery (Opcional)
+**Opção 2 - Instalação local:**
+- **Windows**: [Redis for Windows](https://github.com/microsoftarchive/redis/releases)
+- **Linux**: `sudo apt install redis-server && sudo systemctl start redis`
+- **Mac**: `brew install redis && brew services start redis`
 
+##### Celery Workers (Para processamento assíncrono)
+
+**Terminal 3:**
 ```bash
-# Terminal 1 - Worker
 cd backend
-celery -A core worker -l info
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
 
-# Terminal 2 - Beat (scheduler)
+celery -A core worker -l info --pool=solo  # Windows
+# celery -A core worker -l info  # Linux/Mac
+```
+
+**Terminal 4 (Scheduler - opcional):**
+```bash
+cd backend
+venv\Scripts\activate  # Windows
+
 celery -A core beat -l info
+```
+
+---
+
+#### 📝 Resumo dos Comandos para Próximas Execuções
+
+Depois da instalação inicial, para subir o sistema:
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+venv\Scripts\activate  # Windows
+python manage.py runserver
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+**Terminal 3 - Celery (Opcional):**
+```bash
+cd backend
+venv\Scripts\activate  # Windows
+celery -A core worker -l info --pool=solo
 ```
 
 ---

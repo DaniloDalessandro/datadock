@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ColumnFilterPopover, FilterValue } from "@/components/filters"
+import { config } from "@/lib/config"
 
 interface ColumnMetadata {
   name: string
@@ -70,7 +71,7 @@ export default function DatasetsPublicosPage() {
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const API_BASE_URL = config.apiUrl
         const response = await fetch(`${API_BASE_URL}/api/data-import/public-datasets/`)
 
         if (response.ok) {
@@ -95,7 +96,7 @@ export default function DatasetsPublicosPage() {
     setIsSearching(true)
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
 
       // Busca metadados das colunas
       const metadataResponse = await fetch(
@@ -131,7 +132,7 @@ export default function DatasetsPublicosPage() {
 
   const handleDownload = async (datasetId: number, tableName: string) => {
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
 
       // Monta os parâmetros da URL
       const params = new URLSearchParams()

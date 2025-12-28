@@ -15,6 +15,7 @@ import {
   Sparkles,
   Info
 } from "lucide-react"
+import { config } from "@/lib/config"
 
 interface Message {
   id: string
@@ -71,7 +72,7 @@ export default function AlicePage() {
         throw new Error('Sessão expirada. Faça login novamente.')
       }
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = config.apiUrl
       const token = localStorage.getItem('access_token')
 
       if (!token) {
