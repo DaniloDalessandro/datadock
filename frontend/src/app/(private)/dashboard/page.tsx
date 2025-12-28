@@ -83,7 +83,7 @@ function ChartCard({
             >
               <Maximize2 className="h-4 w-4" />
             </Button>
-            <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" hideClose>
+            <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" showCloseButton={false}>
               <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
                 <div className="flex-shrink-0 p-6 pb-4 border-b bg-white shadow-sm">
                   <div className="flex items-center justify-between">
