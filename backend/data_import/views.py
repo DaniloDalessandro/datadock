@@ -19,6 +19,7 @@ from .cache import invalidate_process_caches
 import logging
 import uuid
 import io
+import csv
 
 logger = logging.getLogger(__name__)
 
@@ -769,15 +770,26 @@ class PublicDownloadDataView(APIView):
         Supports formats: csv, xlsx
         """
         try:
+            logger.info("="*60)
+            logger.info(f"[DOWNLOAD] Iniciando download para dataset ID: {pk}")
+            logger.info("="*60)
+
             process = DataImportProcess.objects.get(pk=pk, status='active')
             all_columns = list(process.column_structure.keys())
 
+            logger.info(f"[DOWNLOAD] Dataset: {process.table_name}")
+            logger.info(f"[DOWNLOAD] Total de colunas: {len(all_columns)}")
+
             # Get selected columns from query params
             columns_param = request.GET.get('columns', '')
+            logger.info(f"[DOWNLOAD] Parametro columns: {columns_param}")
+
             if columns_param:
                 selected_columns = [col for col in columns_param.split(',') if col in all_columns]
             else:
                 selected_columns = all_columns
+
+            logger.info(f"[DOWNLOAD] Colunas selecionadas: {len(selected_columns)}")
 
             if not selected_columns:
                 return Response(
@@ -790,23 +802,40 @@ class PublicDownloadDataView(APIView):
             if file_format not in ['csv', 'xlsx']:
                 file_format = 'csv'
 
+            logger.info(f"[DOWNLOAD] Formato de arquivo: {file_format}")
+
             # Get filters from query params
             filters_param = request.GET.get('filters', '')
             active_filters = {}
+            logger.info(f"[DOWNLOAD] Parametro filters (raw): {filters_param}")
+
             if filters_param:
                 try:
                     import json
                     active_filters = json.loads(filters_param)
-                except (json.JSONDecodeError, ValueError):
-                    logger.warning(f"Invalid filters JSON: {filters_param}")
+                    logger.info(f"[DOWNLOAD] Filtros parseados com sucesso: {len(active_filters)} filtros")
+                    logger.info(f"[DOWNLOAD] Detalhes dos filtros: {active_filters}")
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"[DOWNLOAD] Erro ao parsear filtros JSON: {filters_param}")
+                    logger.warning(f"[DOWNLOAD] Erro: {str(e)}")
+            else:
+                logger.info("[DOWNLOAD] Nenhum filtro aplicado")
 
             from .models import ImportedDataRecord
 
+            filtered_count = 0
+            total_count = 0
+
             def apply_filters_to_record(record_data, filters):
                 """Apply filters to a single record"""
+                nonlocal filtered_count, total_count
+                total_count += 1
+
                 if not filters:
+                    filtered_count += 1
                     return True
 
+                # Se qualquer filtro rejeitar, retorna False
                 for column_name, filter_config in filters.items():
                     if not filter_config:
                         continue
@@ -819,6 +848,10 @@ class PublicDownloadDataView(APIView):
                     if filter_type == 'string':
                         cell_str = str(cell_value).lower() if cell_value is not None else ""
                         filter_str = str(filter_value).lower() if filter_value else ""
+
+                        # Se não há valor de filtro, passa
+                        if not filter_str:
+                            continue
 
                         if filter_operator == 'contains' and filter_str not in cell_str:
                             return False
@@ -852,6 +885,8 @@ class PublicDownloadDataView(APIView):
                         if selected_values and str(cell_value).lower() not in [v.lower() for v in selected_values]:
                             return False
 
+                # Se passou por todos os filtros, aceita
+                filtered_count += 1
                 return True
 
             if file_format == 'csv':
@@ -881,6 +916,8 @@ class PublicDownloadDataView(APIView):
                     content_type='text/csv; charset=utf-8'
                 )
                 response['Content-Disposition'] = f'attachment; filename="{process.table_name}.csv"'
+
+                logger.info(f"[DOWNLOAD] CSV gerado - Total de registros processados: {total_count}, Filtrados: {filtered_count}")
 
             else:
                 # For Excel, we need to use write-only mode for better memory efficiency
@@ -914,6 +951,11 @@ class PublicDownloadDataView(APIView):
                 content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 response = HttpResponse(output.getvalue(), content_type=content_type)
                 response['Content-Disposition'] = f'attachment; filename="{process.table_name}.xlsx"'
+
+                logger.info(f"[DOWNLOAD] XLSX gerado - Total de registros processados: {total_count}, Filtrados: {filtered_count}")
+
+            logger.info(f"[DOWNLOAD] Download concluido com sucesso")
+            logger.info("="*60)
 
             return response
 

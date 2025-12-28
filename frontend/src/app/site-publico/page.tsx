@@ -171,19 +171,40 @@ export default function SitePublicoPage() {
     }
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const columnsParam = selectedColumns.join(',')
-      const response = await fetch(`${API_BASE_URL}/api/data-import/public-download/${processId}/?file_format=${downloadFormat}&columns=${encodeURIComponent(columnsParam)}`)
+
+      // Monta os parâmetros da URL
+      const params = new URLSearchParams()
+      params.append('file_format', downloadFormat)
+      params.append('columns', selectedColumns.join(','))
+
+      // Adiciona filtros se existirem
+      if (Object.keys(activeFilters).length > 0) {
+        params.append('filters', JSON.stringify(activeFilters))
+        console.log('[DOWNLOAD] Enviando filtros:', activeFilters)
+      } else {
+        console.log('[DOWNLOAD] Nenhum filtro aplicado')
+      }
+
+      const url = `${API_BASE_URL}/api/data-import/public-download/${processId}/?${params.toString()}`
+      console.log('[DOWNLOAD] URL:', url)
+
+      const response = await fetch(url)
       if (!response.ok) throw new Error('Erro ao baixar dados')
+
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      const downloadUrl = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url
+      a.href = downloadUrl
       a.download = `${tableName}.${downloadFormat}`
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
+      window.URL.revokeObjectURL(downloadUrl)
       document.body.removeChild(a)
-      toast.success("Download iniciado!")
+
+      const filterInfo = Object.keys(activeFilters).length > 0
+        ? ` (${filteredData.length} registros filtrados)`
+        : ''
+      toast.success(`Download iniciado!${filterInfo}`)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao baixar dados"
       toast.error(errorMessage)

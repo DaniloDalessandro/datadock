@@ -140,7 +140,26 @@ export default function DatasetsPublicosPage() {
   const handleDownload = async (datasetId: number, tableName: string) => {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const url = `${API_BASE_URL}/api/data-import/public-download/${datasetId}/?format=${downloadFormat}`
+
+      // Monta os parâmetros da URL
+      const params = new URLSearchParams()
+      params.append('file_format', downloadFormat)
+
+      // Adiciona colunas selecionadas
+      if (selectedColumns.length > 0) {
+        params.append('columns', selectedColumns.join(','))
+      }
+
+      // Adiciona filtros se existirem
+      if (Object.keys(activeFilters).length > 0) {
+        params.append('filters', JSON.stringify(activeFilters))
+        console.log('[DOWNLOAD] Enviando filtros:', activeFilters)
+      } else {
+        console.log('[DOWNLOAD] Nenhum filtro aplicado')
+      }
+
+      const url = `${API_BASE_URL}/api/data-import/public-download/${datasetId}/?${params.toString()}`
+      console.log('[DOWNLOAD] URL:', url)
 
       const response = await fetch(url)
 
@@ -158,7 +177,10 @@ export default function DatasetsPublicosPage() {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(downloadUrl)
 
-      toast.success(`Arquivo ${tableName}.${downloadFormat} baixado com sucesso!`)
+      const filterInfo = Object.keys(activeFilters).length > 0
+        ? ` (${displayData.length} registros filtrados)`
+        : ''
+      toast.success(`Arquivo ${tableName}.${downloadFormat} baixado com sucesso!${filterInfo}`)
     } catch (error) {
       console.error("Error downloading file:", error)
       toast.error("Erro ao baixar arquivo")
