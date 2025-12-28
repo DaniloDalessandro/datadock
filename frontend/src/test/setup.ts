@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
 
 // Cleanup após cada teste
 afterEach(() => {
@@ -15,7 +15,7 @@ const localStorageMock = {
   clear: vi.fn(),
 }
 
-global.localStorage = localStorageMock as any
+global.localStorage = localStorageMock as unknown as Storage
 
 // Mock do fetch
 global.fetch = vi.fn()

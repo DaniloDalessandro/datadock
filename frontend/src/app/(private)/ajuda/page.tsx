@@ -54,7 +54,7 @@ export default function AjudaPage() {
         <HelpCircle className="h-8 w-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Central de Ajuda</h1>
-          <p className="text-sm text-gray-600">Tutoriais, FAQ e suporte para o DataDock</p>
+          <p className="text-sm text-gray-600">Tutoriais, FAQ e suporte para o DataPort</p>
         </div>
       </div>
 

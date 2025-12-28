@@ -67,7 +67,9 @@ export function NavMain({
                             <button
                               onClick={(e) => {
                                 e.preventDefault()
-                                onFormAction?.(subItem.action)
+                                if (subItem.action) {
+                                  onFormAction?.(subItem.action)
+                                }
                               }}
                               className="w-full text-left"
                             >

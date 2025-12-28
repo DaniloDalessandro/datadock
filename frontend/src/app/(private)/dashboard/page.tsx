@@ -102,7 +102,7 @@ function ChartCard({
                 <div className="flex-1 p-8 overflow-hidden">
                   <div className="h-full bg-white rounded-xl shadow-lg border border-gray-200 p-8">
                     <ResponsiveContainer width="100%" height="100%">
-                      {children}
+                      <>{children}</>
                     </ResponsiveContainer>
                   </div>
                 </div>
@@ -113,7 +113,7 @@ function ChartCard({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          {children}
+          <>{children}</>
         </ResponsiveContainer>
       </CardContent>
     </Card>

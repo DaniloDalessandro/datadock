@@ -111,8 +111,8 @@ export const faqs: FAQ[] = [
     category: "Relatórios"
   },
   {
-    question: "O DataDock funciona offline?",
-    answer: "Não, o DataDock é um sistema web que requer conexão com internet. Todos os dados são salvos automaticamente na nuvem quando há conexão ativa.",
+    question: "O DataPort funciona offline?",
+    answer: "Não, o DataPort é um sistema web que requer conexão com internet. Todos os dados são salvos automaticamente na nuvem quando há conexão ativa.",
     category: "Técnico"
   },
   {
@@ -122,7 +122,7 @@ export const faqs: FAQ[] = [
   },
   {
     question: "Posso usar o sistema no celular ou tablet?",
-    answer: "Sim, o DataDock é totalmente responsivo e funciona em dispositivos móveis. Recomendamos usar navegadores atualizados (Chrome, Safari, Edge) para melhor experiência.",
+    answer: "Sim, o DataPort é totalmente responsivo e funciona em dispositivos móveis. Recomendamos usar navegadores atualizados (Chrome, Safari, Edge) para melhor experiência.",
     category: "Técnico"
   },
   {
@@ -132,7 +132,7 @@ export const faqs: FAQ[] = [
   },
   {
     question: "Quais formatos de arquivo posso importar para datasets?",
-    answer: "O DataDock suporta diversos formatos: CSV, JSON, Excel (XLSX, XLS), XML e arquivos de texto delimitado. Para grandes volumes, recomendamos CSV ou JSON otimizados.",
+    answer: "O DataPort suporta diversos formatos: CSV, JSON, Excel (XLSX, XLS), XML e arquivos de texto delimitado. Para grandes volumes, recomendamos CSV ou JSON otimizados.",
     category: "Datasets"
   },
   {

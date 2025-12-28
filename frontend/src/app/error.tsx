@@ -12,21 +12,21 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Log do erro para debug
     console.error('Erro da aplicação:', error);
-    
+
     // Se não estiver autenticado, redirecionar para login
-    if (!isAuthenticated || !accessToken) {
+    if (!isAuthenticated) {
       const timer = setTimeout(() => {
         router.push('/login');
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [error, isAuthenticated, accessToken, router]);
+  }, [error, isAuthenticated, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -46,14 +46,14 @@ export default function Error({
         </div>
         
         <div className="space-y-3">
-          {isAuthenticated && accessToken ? (
+          {isAuthenticated ? (
             <>
               <Button onClick={reset} className="w-full">
                 Tentar novamente
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/dashboard')} 
+              <Button
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
                 className="w-full"
               >
                 Voltar ao Dashboard

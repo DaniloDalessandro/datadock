@@ -54,7 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { config } from '@/lib/config';
+import { config as appConfig } from '@/lib/config';
 
 // Types for site configuration
 interface SiteConfig {
@@ -296,7 +296,7 @@ export default function SiteHomePage() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const API_URL = config.apiUrl;
+        const API_URL = appConfig.apiUrl;
         const response = await fetch(`${API_URL}/api/site/configuration/`);
         if (response.ok) {
           const result = await response.json();
@@ -326,7 +326,7 @@ export default function SiteHomePage() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const API_URL = config.apiUrl;
+        const API_URL = appConfig.apiUrl;
 
         // Try to fetch counts with authentication (will work if user is logged in)
         // If not authenticated, these will gracefully fail and show 0
@@ -390,7 +390,7 @@ export default function SiteHomePage() {
   // Driver form submission
   const onDriverSubmit = async (data: DriverFormData) => {
     try {
-      const API_URL = config.apiUrl;
+      const API_URL = appConfig.apiUrl;
 
       const response = await fetch(`${API_URL}/api/requests/drivers/`, {
         method: 'POST',
@@ -442,7 +442,7 @@ export default function SiteHomePage() {
   // Vehicle form submission
   const onVehicleSubmit = async (data: VehicleFormData) => {
     try {
-      const API_URL = config.apiUrl;
+      const API_URL = appConfig.apiUrl;
 
       const response = await fetch(`${API_URL}/api/requests/vehicles/`, {
         method: 'POST',
@@ -499,7 +499,7 @@ export default function SiteHomePage() {
 
     setIsLoadingPlates(true);
     try {
-      const API_URL = config.apiUrl;
+      const API_URL = appConfig.apiUrl;
       const response = await fetch(`${API_URL}/api/complaints/vehicles/autocomplete/?q=${encodeURIComponent(query)}`);
 
       if (response.ok) {
@@ -522,7 +522,7 @@ export default function SiteHomePage() {
   // Complaint form submission
   const onComplaintSubmit = async (data: ComplaintFormData) => {
     try {
-      const API_URL = config.apiUrl;
+      const API_URL = appConfig.apiUrl;
 
       const response = await fetch(`${API_URL}/api/complaints/`, {
         method: 'POST',
@@ -1640,7 +1640,7 @@ export default function SiteHomePage() {
                     setVehicleData(null);
 
                     try {
-                      const API_URL = config.apiUrl;
+                      const API_URL = appConfig.apiUrl;
                       const response = await fetch(`${API_URL}/api/vehicles/by-plate/${searchPlate}/`);
 
                       if (!response.ok) {

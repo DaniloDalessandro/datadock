@@ -7,18 +7,18 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function NotFound() {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Se não estiver autenticado, redirecionar para login após um breve delay
-    if (!isAuthenticated || !accessToken) {
+    if (!isAuthenticated) {
       const timer = setTimeout(() => {
         router.push('/login');
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, accessToken, router]);
+  }, [isAuthenticated, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -32,7 +32,7 @@ export default function NotFound() {
         </div>
         
         <div className="space-y-3">
-          {isAuthenticated && accessToken ? (
+          {isAuthenticated ? (
             <>
               <Button asChild className="w-full">
                 <Link href="/dashboard">

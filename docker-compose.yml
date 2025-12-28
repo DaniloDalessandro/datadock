@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # Banco de dados PostgreSQL
   postgres:
@@ -51,7 +49,6 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DEBUG=False
       - DATABASE_URL=postgresql://${POSTGRES_USER:-dataport}:${POSTGRES_PASSWORD:-dataport123}@postgres:5432/${POSTGRES_DB:-dataport}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
@@ -101,10 +98,19 @@ services:
       - ./backend:/app
       - backend_logs:/app/logs
     depends_on:
-      - postgres
-      - redis
-      - backend
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     command: celery -A core worker -l info --max-tasks-per-child=1000
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - dataport-network
 
@@ -123,11 +129,15 @@ services:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
     volumes:
       - ./backend:/app
+      - celerybeat_schedule:/app/schedule
     depends_on:
-      - postgres
-      - redis
-      - backend
-    command: celery -A core beat -l info
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    command: celery -A core beat -l info --schedule=/app/schedule/celerybeat-schedule
     networks:
       - dataport-network
 
@@ -135,12 +145,12 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: dataport-frontend
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NODE_ENV=production
+      - NODE_ENV=development
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -196,3 +206,5 @@ volumes:
     name: dataport-backend-media
   nginx_logs:
     name: dataport-nginx-logs
+  celerybeat_schedule:
+    name: dataport-celerybeat-schedule
