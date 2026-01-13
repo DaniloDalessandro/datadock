@@ -220,9 +220,8 @@ class ListProcessesView(APIView):
 
     def get(self, request):
         """
-        Lista todos os processos de importação com paginação e queries otimizadas
+        Lista todos os processos de importação com paginação
         """
-        # Usa select_related para evitar queries N+1 ao acessar created_by
         processes = DataImportProcess.objects.select_related("created_by").all()
 
         paginator = DataImportPagination()
@@ -267,7 +266,7 @@ class DeleteProcessView(APIView):
 
     def delete(self, request, pk):
         """
-        Deleta um processo e seus registros associados (usando ORM)
+        Deleta um processo e seus registros associados
         """
         try:
             process = DataImportProcess.objects.get(pk=pk)
@@ -430,8 +429,7 @@ class ToggleStatusView(APIView):
 
     def post(self, request, pk):
         """
-        Toggle process status between active and inactive
-        Only owner or superuser can toggle
+        Alterna o status do processo entre ativo e inativo
         """
         try:
             process = DataImportProcess.objects.get(pk=pk)
@@ -439,7 +437,6 @@ class ToggleStatusView(APIView):
             # Verifica permissão
             self.check_object_permissions(request, process)
 
-            # Alterna status
             if process.status == "active":
                 process.status = "inactive"
                 message = "Processo {process.table_name} marcado como inativo"
@@ -449,10 +446,8 @@ class ToggleStatusView(APIView):
 
             process.save()
 
-            # Invalidate related caches
             invalidate_process_caches(pk)
 
-            # Retorna processo atualizado
             serializer = DataImportProcessSerializer(process)
 
             return Response(
@@ -481,13 +476,12 @@ class DataPreviewView(APIView):
 
     def get(self, request, pk):
         """
-        Get preview of table data (first 5 records) using ORM
+        Retorna prévia dos dados da tabela (primeiros 5 registros)
         """
         try:
             process = DataImportProcess.objects.get(pk=pk)
             from .models import ImportedDataRecord
 
-            # Obtém nomes das colunas
             columns = list(process.column_structure.keys())
 
             if not columns:
@@ -496,10 +490,8 @@ class DataPreviewView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Query records using ORM
             records = ImportedDataRecord.objects.filter(process=process)[:5]
 
-            # Convert to list of dictionaries
             data = [record.data for record in records]
 
             return Response(
@@ -532,7 +524,7 @@ class SearchDataView(APIView):
 
     def get(self, request):
         """
-        Search data across all active processes using ORM
+        Busca dados em todos os processos ativos
         """
         query = request.GET.get("q", "").strip()
 
@@ -543,7 +535,6 @@ class SearchDataView(APIView):
             )
 
         try:
-            # Get all active processes
             active_processes = DataImportProcess.objects.filter(status="active")
             from django.db.models import Q
 
@@ -557,15 +548,11 @@ class SearchDataView(APIView):
                 if not columns:
                     continue
 
-                # Build Q objects for searching in JSON fields
-                # Search in any column value (converted to string)
                 search_query = Q()
                 for col in columns:
-                    # Django JSONField lookup: data__column_name__icontains
                     search_query |= Q(**{f"data__{col}__icontains": query})
 
                 try:
-                    # Find matching records
                     matching_records = ImportedDataRecord.objects.filter(
                         process=process
                     ).filter(search_query)[:100]
@@ -606,7 +593,7 @@ class SearchDataView(APIView):
 
 
 class Echo:
-    """An object that implements just the write method of the file-like interface for streaming."""
+    """Objeto que implementa apenas o método write da interface file-like para streaming."""
 
     def write(self, value):
         return value
@@ -622,7 +609,7 @@ class DownloadDataView(APIView):
 
     def get(self, request, pk):
         """
-        Download table data as CSV using streaming to avoid memory issues
+        Baixa dados da tabela como CSV usando streaming para evitar problemas de memória
         """
         try:
             process = DataImportProcess.objects.get(pk=pk)
@@ -637,14 +624,12 @@ class DownloadDataView(APIView):
                 )
 
             def iter_csv_rows():
-                """Generator function to stream CSV rows"""
+                """Função generator para fazer streaming de linhas CSV"""
                 buffer = Echo()
                 writer = csv.writer(buffer)
 
-                # Yield header
                 yield writer.writerow(columns)
 
-                # Stream records in batches to avoid loading all data in memory
                 records = ImportedDataRecord.objects.filter(process=process).iterator(
                     chunk_size=1000
                 )
@@ -652,7 +637,6 @@ class DownloadDataView(APIView):
                     row = [record.data.get(col, "") for col in columns]
                     yield writer.writerow(row)
 
-            # Create streaming response
             response = StreamingHttpResponse(iter_csv_rows(), content_type="text/csv")
             response["Content-Disposition"] = (
                 f'attachment; filename="{process.table_name}.csv"'
@@ -677,26 +661,24 @@ class DownloadDataView(APIView):
 
 class PublicListDatasetsView(APIView):
     """
-    Public view to list all active datasets (no authentication required)
+    View pública para listar todos os datasets ativos (sem autenticação)
     GET /api/data-import/public-datasets/
-    Cached for 10 minutes (public endpoint, less frequent updates)
+    Cache de 10 minutos
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
         """
-        List all active datasets
+        Lista todos os datasets ativos
         """
         try:
-            # Get all active processes with optimized queries
             active_processes = (
                 DataImportProcess.objects.select_related("created_by")
                 .filter(status="active")
                 .order_by("-created_at")
             )
 
-            # Serialize the data
             serializer = DataImportProcessSerializer(active_processes, many=True)
 
             return Response(
@@ -716,16 +698,16 @@ class PublicListDatasetsView(APIView):
 @method_decorator(ratelimit(key="ip", rate="100/h", method="GET"), name="get")
 class PublicSearchDataView(APIView):
     """
-    Public view to search data across all active tables (no authentication required)
+    View pública para buscar dados em todas as tabelas ativas (sem autenticação)
     GET /api/data-import/public-search/?q=termo
-    Rate limit: 100 searches per hour per IP
+    Rate limit: 100 buscas por hora por IP
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
         """
-        Public search across all active tables using ORM
+        Busca pública em todas as tabelas ativas
         """
         query = request.GET.get("q", "").strip()
 
@@ -736,7 +718,6 @@ class PublicSearchDataView(APIView):
             )
 
         try:
-            # Get all active processes
             active_processes = DataImportProcess.objects.filter(status="active")
             from django.db.models import Q
 
@@ -750,13 +731,11 @@ class PublicSearchDataView(APIView):
                 if not columns:
                     continue
 
-                # Build Q objects for searching in JSON fields
                 search_query = Q()
                 for col in columns:
                     search_query |= Q(**{f"data__{col}__icontains": query})
 
                 try:
-                    # Find matching records
                     matching_records = ImportedDataRecord.objects.filter(
                         process=process
                     ).filter(search_query)[:100]
@@ -799,17 +778,17 @@ class PublicSearchDataView(APIView):
 @method_decorator(ratelimit(key="ip", rate="50/h", method="GET"), name="get")
 class PublicDownloadDataView(APIView):
     """
-    Public view to download table data with streaming support (no authentication required)
+    View pública para baixar dados de tabela com suporte a streaming (sem autenticação)
     GET /api/data-import/public-download/<id>/?format=csv&columns=col1,col2
-    Rate limit: 50 downloads per hour per IP
+    Rate limit: 50 downloads por hora por IP
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
         """
-        Download table data (public access) with memory-efficient streaming
-        Supports formats: csv, xlsx
+        Baixa dados da tabela (acesso público) com streaming eficiente em memória
+        Suporta formatos: csv, xlsx
         """
         try:
             logger.info("=" * 60)
@@ -822,7 +801,6 @@ class PublicDownloadDataView(APIView):
             logger.info("[DOWNLOAD] Dataset: {process.table_name}")
             logger.info("[DOWNLOAD] Total de colunas: {len(all_columns)}")
 
-            # Get selected columns from query params
             columns_param = request.GET.get("columns", "")
             logger.info("[DOWNLOAD] Parametro columns: {columns_param}")
 
@@ -841,7 +819,7 @@ class PublicDownloadDataView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Get format from query params (use file_format to avoid conflict with DRF's format param)
+            # Usa file_format para evitar conflito com o parâmetro format do DRF
             file_format = request.GET.get(
                 "file_format", request.GET.get("format", "csv")
             ).lower()
@@ -850,7 +828,6 @@ class PublicDownloadDataView(APIView):
 
             logger.info("[DOWNLOAD] Formato de arquivo: {file_format}")
 
-            # Get filters from query params
             filters_param = request.GET.get("filters", "")
             active_filters = {}
             logger.info("[DOWNLOAD] Parametro filters (raw): {filters_param}")
@@ -887,7 +864,6 @@ class PublicDownloadDataView(APIView):
                     filtered_count += 1
                     return True
 
-                # Lógica AND: todos os filtros devem passar
                 for column_name, filter_config in filters.items():
                     if not filter_config:
                         continue
@@ -966,24 +942,21 @@ class PublicDownloadDataView(APIView):
             if file_format == "csv":
 
                 def iter_csv_rows():
-                    """Generator function to stream CSV rows"""
+                    """Função generator para fazer streaming de linhas CSV"""
                     buffer = Echo()
                     writer = csv.writer(
                         buffer, delimiter=";", quoting=csv.QUOTE_MINIMAL
                     )
 
-                    # Yield UTF-8 BOM for Excel compatibility
+                    # UTF-8 BOM para compatibilidade com Excel
                     yield "\ufeff"
 
-                    # Yield header
                     yield writer.writerow(selected_columns)
 
-                    # Stream records in batches
                     records = ImportedDataRecord.objects.filter(
                         process=process
                     ).iterator(chunk_size=1000)
                     for record in records:
-                        # Apply filters
                         if not apply_filters_to_record(record.data, active_filters):
                             continue
 
@@ -1002,30 +975,26 @@ class PublicDownloadDataView(APIView):
                 )
 
             else:
-                # For Excel, we need to use write-only mode for better memory efficiency                from openpyxl import Workbook
+                # Para Excel, usa modo write-only para melhor eficiência de memória
+                from openpyxl import Workbook
 
-                # Save to bytes
                 output = io.BytesIO()
 
                 wb = Workbook(write_only=True)
                 ws = wb.create_sheet(process.table_name[:31])
 
-                # Write header
                 ws.append(selected_columns)
 
-                # Write data in batches using iterator
                 records = ImportedDataRecord.objects.filter(process=process).iterator(
                     chunk_size=1000
                 )
                 for record in records:
-                    # Apply filters
                     if not apply_filters_to_record(record.data, active_filters):
                         continue
 
                     row = [record.data.get(col, "") for col in selected_columns]
                     ws.append(row)
 
-                # Save and close workbook properly
                 wb.save(output)
                 wb.close()
                 output.seek(0)
@@ -1065,7 +1034,7 @@ class PublicDownloadDataView(APIView):
 
 class PublicDataPreviewView(APIView):
     """
-    Public view to get all data from a specific dataset (no authentication required)
+    View pública para obter todos os dados de um dataset específico (sem autenticação)
     GET /api/data-import/public-data/<id>/
     """
 
@@ -1073,7 +1042,7 @@ class PublicDataPreviewView(APIView):
 
     def get(self, request, pk):
         """
-        Get all data from a specific active dataset
+        Obtém todos os dados de um dataset ativo específico
         """
         try:
             process = DataImportProcess.objects.get(pk=pk, status="active")
@@ -1087,12 +1056,10 @@ class PublicDataPreviewView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Query all data using ORM
             from .models import ImportedDataRecord
 
             records = ImportedDataRecord.objects.filter(process=process)
 
-            # Convert to list of dictionaries
             data = [record.data for record in records]
 
             return Response(
@@ -1123,7 +1090,7 @@ class PublicDataPreviewView(APIView):
 
 class PublicColumnMetadataView(APIView):
     """
-    Public view to get column metadata including types and unique values
+    View pública para obter metadados de colunas incluindo tipos e valores únicos
     GET /api/data-import/public-metadata/<id>/
     """
 
@@ -1131,7 +1098,7 @@ class PublicColumnMetadataView(APIView):
 
     def get(self, request, pk):
         """
-        Get column metadata for filtering
+        Obtém metadados de colunas para filtragem
         """
         try:
             process = DataImportProcess.objects.get(pk=pk, status="active")
@@ -1145,7 +1112,6 @@ class PublicColumnMetadataView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Build metadata for each column
             from .models import ImportedDataRecord
 
             columns_metadata = []
@@ -1157,8 +1123,7 @@ class PublicColumnMetadataView(APIView):
                     else str(col_info)
                 )
 
-                # Determine filter type based on column type
-                filter_type = "string"  # Default for TEXT and string types
+                filter_type = "string"
                 if col_type in ["INTEGER", "int", "bigint", "smallint"]:
                     filter_type = "integer"
                 elif col_type in ["REAL", "float", "double", "decimal", "numeric"]:
@@ -1179,14 +1144,11 @@ class PublicColumnMetadataView(APIView):
                     "string",
                     "str",
                 ]:
-                    filter_type = (
-                        "category"  # TEXT columns use category filter (selection)
-                    )
+                    filter_type = "category"
 
-                # Get unique values for category filters (limit to 100)
+                # Limita valores únicos a 100 para evitar sobrecarga
                 unique_values = []
                 try:
-                    # Query unique values using Django JSONField
                     records = ImportedDataRecord.objects.filter(process=process)
                     unique_set = set()
                     for record in records:

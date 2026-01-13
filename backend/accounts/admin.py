@@ -67,7 +67,6 @@ class CustomUserAdmin(UserAdmin):
     )
 
     def name_display(self, obj):
-        """Exibe nome completo formatado"""
         full_name = obj.get_full_name()
         if full_name:
             return format_html("<strong>{}</strong>", full_name)
@@ -76,7 +75,6 @@ class CustomUserAdmin(UserAdmin):
     name_display.short_description = "Nome Completo"
 
     def profile_type_display(self, obj):
-        """Exibe tipo de perfil com badge colorido"""
         try:
             if hasattr(obj, "internal_profile"):
                 return format_html(
@@ -98,7 +96,6 @@ class CustomUserAdmin(UserAdmin):
     profile_type_display.short_description = "Tipo de Perfil"
 
     def is_active_display(self, obj):
-        """Exibe status ativo/inativo com badge colorido"""
         if obj.is_active:
             return format_html(
                 '<span style="background-color: #28a745; color: white; padding: 3px 10px; '
@@ -170,7 +167,6 @@ class InternalProfileAdmin(admin.ModelAdmin):
     )
 
     def user_display(self, obj):
-        """Exibe usuário com badge de perfil interno"""
         full_name = obj.user.get_full_name() or obj.user.username
         return format_html(
             '<span style="background-color: #28a745; color: white; padding: 2px 6px; '
@@ -207,7 +203,6 @@ class ExternalProfileAdmin(admin.ModelAdmin):
     )
 
     def user_display(self, obj):
-        """Exibe usuário com badge de perfil externo"""
         full_name = obj.user.get_full_name() or obj.user.username
         return format_html(
             '<span style="background-color: #17a2b8; color: white; padding: 2px 6px; '
@@ -218,7 +213,6 @@ class ExternalProfileAdmin(admin.ModelAdmin):
     user_display.short_description = "Usuário"
 
     def external_type_display(self, obj):
-        """Exibe tipo externo com badge colorido"""
         colors = {
             "cliente": "#007bff",
             "fornecedor": "#28a745",

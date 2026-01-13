@@ -1,5 +1,5 @@
 """
-Custom permissions for data_import app
+Permissões customizadas para o módulo data_import
 """
 
 from rest_framework import permissions
@@ -7,65 +7,58 @@ from rest_framework import permissions
 
 class IsDatasetOwnerOrReadOnly(permissions.BasePermission):
     """
-    Custom permission to only allow owners of a dataset to edit/delete it.
-    Read operations are allowed for all authenticated users.
+    Permissão customizada que permite apenas aos proprietários de um dataset editá-lo ou deletá-lo.
+    Operações de leitura são permitidas para todos os usuários autenticados.
     """
 
     def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed to any authenticated user
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Write permissions are only allowed to the owner or superuser
         return obj.created_by == request.user or request.user.is_superuser
 
 
 class IsDatasetOwner(permissions.BasePermission):
     """
-    Custom permission to only allow owners of a dataset to access it.
+    Permissão customizada que permite apenas aos proprietários de um dataset acessá-lo.
     """
 
     def has_object_permission(self, request, view, obj):
-        # Only the owner or superuser can access
         return obj.created_by == request.user or request.user.is_superuser
 
 
 class CanManageDatasets(permissions.BasePermission):
     """
-    Permission to check if user can manage datasets (create, modify, delete).
-    Superusers and users in 'Dataset Managers' group can manage datasets.
+    Permissão para verificar se usuário pode gerenciar datasets (criar, modificar, deletar).
+    Superusuários e usuários no grupo 'Dataset Managers' podem gerenciar datasets.
     """
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
 
-        # Superusers can always manage
         if request.user.is_superuser:
             return True
 
-        # Check if user is in Dataset Managers group
         return request.user.groups.filter(name="Dataset Managers").exists()
 
 
 class CanDeleteDatasets(permissions.BasePermission):
     """
-    Permission for deleting datasets.
-    Only superusers or dataset owners can delete.
+    Permissão para deletar datasets.
+    Apenas superusuários ou proprietários do dataset podem deletar.
     """
 
     def has_permission(self, request, view):
-        # Must be authenticated
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        # Only owner or superuser can delete
         return obj.created_by == request.user or request.user.is_superuser
 
 
 class IsInternalUser(permissions.BasePermission):
     """
-    Permission that only allows internal users to access.
+    Permissão que permite apenas usuários internos acessarem.
     """
 
     def has_permission(self, request, view):
@@ -74,7 +67,7 @@ class IsInternalUser(permissions.BasePermission):
 
 class IsExternalUser(permissions.BasePermission):
     """
-    Permission that only allows external users to access.
+    Permissão que permite apenas usuários externos acessarem.
     """
 
     def has_permission(self, request, view):

@@ -28,7 +28,7 @@ class VectorService:
 
         genai.configure(api_key=api_key)
         self.model = "models/embedding-001"
-        self.dimensions = 768  # Gemini embedding dimensions
+        self.dimensions = 768  # Dimensões do embedding Gemini
 
     def generate_embedding(self, text: str) -> List[float]:
         """
@@ -100,14 +100,11 @@ class VectorService:
                 logger.info(f"Dataset {dataset.table_name} já possui embedding")
                 return dataset.embedding
 
-            # Constrói descrição
             description = self.build_dataset_description(dataset)
 
-            # Gera embedding
             logger.info(f"Gerando embedding para dataset {dataset.table_name}")
             embedding_vector = self.generate_embedding(description)
 
-            # Prepara metadados
             metadata = {
                 "table_name": dataset.table_name,
                 "title": dataset.title,
@@ -116,7 +113,6 @@ class VectorService:
                 "is_public": dataset.is_public,
             }
 
-            # Cria ou atualiza embedding
             embedding_obj, created = DatasetEmbedding.objects.update_or_create(
                 dataset=dataset,
                 defaults={
@@ -150,23 +146,19 @@ class VectorService:
             Lista de dicionários com datasets e suas distâncias
         """
         try:
-            # Gera embedding da query
             logger.info(f"Buscando datasets similares para: {query}")
             query_embedding = self.generate_embedding(query)
 
-            # Busca por similaridade usando L2Distance
+            # Busca por similaridade usando L2Distance (distância euclidiana)
             queryset = DatasetEmbedding.objects.annotate(
                 distance=L2Distance("embedding", query_embedding)
             ).order_by("distance")
 
-            # Filtra apenas públicos se necessário
             if only_public:
                 queryset = queryset.filter(dataset__is_public=True)
 
-            # Limita resultados
             results = queryset.select_related("dataset")[:limit]
 
-            # Formata resultados
             formatted_results = []
             for embedding_obj in results:
                 formatted_results.append(
@@ -201,7 +193,6 @@ class VectorService:
         stats = {"total": 0, "success": 0, "failed": 0, "errors": []}
 
         try:
-            # Seleciona datasets
             if dataset_ids:
                 datasets = DataImportProcess.objects.filter(
                     id__in=dataset_ids, status="completed"
@@ -212,7 +203,6 @@ class VectorService:
             stats["total"] = datasets.count()
             logger.info(f"Iniciando indexação de {stats['total']} datasets")
 
-            # Indexa cada dataset
             for dataset in datasets.prefetch_related("categories"):
                 try:
                     self.index_dataset(dataset)

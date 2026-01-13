@@ -1,18 +1,5 @@
 """
-URL configuration for core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+Configuração de URLs do projeto DataPort
 """
 
 from django.contrib import admin
@@ -32,7 +19,6 @@ from core.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls, name="admin:index"),
-    # API Documentation (Swagger/OpenAPI)
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/",
@@ -40,17 +26,17 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    # Health check endpoints (no authentication required)
+    # Health checks (sem autenticação)
     path("health/", HealthCheckView.as_view(), name="health-check"),
     path("health/detailed/", DetailedHealthCheckView.as_view(), name="health-detailed"),
     path("health/ready/", ReadinessCheckView.as_view(), name="health-ready"),
     path("health/live/", LivenessCheckView.as_view(), name="health-live"),
-    # API v1 - Versioned endpoints
+    # API v1
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/data-import/", include("data_import.urls")),
     path("api/v1/alice/", include("alice.urls")),
-    # Legacy endpoints (backward compatibility) - will be deprecated
-    # These redirect to v1 automatically
+    # Legacy endpoints (compatibilidade retroativa)
+    # TODO: Descontinuar endpoints legados sem versionamento
     path("api/auth/", include("accounts.urls")),
     path("api/data-import/", include("data_import.urls")),
     path("api/alice/", include("alice.urls")),

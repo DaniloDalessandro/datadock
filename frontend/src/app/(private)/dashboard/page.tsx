@@ -52,7 +52,7 @@ interface ChartCardProps {
 }
 
 /**
- * Componente de card para gráficos com suporte a visualização em tela cheia.
+ * Componente de card para gráficos com suporte a fullscreen
  */
 function ChartCard({
   title,
@@ -157,7 +157,6 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-8 p-8 animate-in fade-in duration-500">
-        {/* Loading skeletons */}
         <div className="grid gap-8 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="border-gray-200">
@@ -204,7 +203,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-500">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -216,7 +214,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Metrics Cards */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white hover:shadow-xl transition-all duration-300">
           <CardContent className="p-6">
@@ -289,7 +286,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Main Charts */}
       <div className="grid gap-6">
         <ChartCard
           title="Volume de Dados Mensal"

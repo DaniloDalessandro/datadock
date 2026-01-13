@@ -1,5 +1,5 @@
 """
-Celery tasks for asynchronous data import processing
+Tasks Celery para processamento assíncrono de importação de dados
 """
 
 import logging
@@ -19,17 +19,17 @@ def process_data_import_async(
     self, table_name, user_id, endpoint_url=None, file_path=None, import_type="endpoint"
 ):
     """
-    Asynchronously process data import from endpoint or file
+    Processa importação de dados de endpoint ou arquivo de forma assíncrona
 
     Args:
-        table_name: Name of the dataset/table
-        user_id: ID of the user who initiated the import
-        endpoint_url: URL to fetch data from (for endpoint imports)
-        file_path: Path to uploaded file (for file imports)
-        import_type: 'endpoint' or 'file'
+        table_name: Nome do dataset/tabela
+        user_id: ID do usuário que iniciou a importação
+        endpoint_url: URL para buscar dados (para importações de endpoint)
+        file_path: Caminho do arquivo enviado (para importações de arquivo)
+        import_type: 'endpoint' ou 'file'
 
     Returns:
-        dict: Import result with process ID and statistics
+        dict: Resultado da importação com ID do processo e estatísticas
     """
     task_id = self.request.id
     async_task = None
@@ -42,12 +42,10 @@ def process_data_import_async(
         User = get_user_model()
         user = User.objects.get(id=user_id)
 
-        # Create AsyncTask record for tracking
         async_task = AsyncTask.objects.create(
             task_id=task_id, task_name="Data Import", status="started", created_by=user
         )
 
-        # Create or get process
         process, created = DataImportProcess.objects.get_or_create(
             table_name=table_name,
             defaults={
@@ -58,43 +56,34 @@ def process_data_import_async(
         )
 
         if import_type == "endpoint" and endpoint_url:
-            # Fetch data from endpoint
             data, column_structure = DataImportService.fetch_data_from_endpoint(
                 endpoint_url
             )
             process.endpoint_url = endpoint_url
         elif import_type == "file" and file_path:
-            # Read data from file
-
             data, column_structure = DataImportService.process_file_data_from_path(
                 file_path
             )
         else:
             raise ValueError("Invalid import type or missing data source")
 
-        # Update column structure
         process.column_structure = column_structure
         process.save()
 
-        # Insert data using ORM
         insert_stats = DataImportService.insert_data_orm(
             process, data, column_structure
         )
 
-        # Update AsyncTask with process link
         async_task.process = process
         async_task.progress = 50
         async_task.save()
 
-        # Update process with record count
         process.record_count = insert_stats["inserted"]
         process.error_message = None
         process.save()
 
-        # Invalidate related caches
         invalidate_process_caches(process.id)
 
-        # Mark task as success
         async_task.status = "success"
         async_task.progress = 100
         async_task.result = insert_stats
@@ -114,7 +103,6 @@ def process_data_import_async(
     except Exception as e:
         logger.error("Error in async import for {table_name}: {str(e)}", exc_info=True)
 
-        # Update AsyncTask with error
         if async_task:
             async_task.status = (
                 "failed" if self.request.retries >= self.max_retries else "retrying"
@@ -122,7 +110,6 @@ def process_data_import_async(
             async_task.error = str(e)
             async_task.save()
 
-        # Update process with error
         try:
             process = DataImportProcess.objects.get(table_name=table_name)
             process.error_message = str(e)
@@ -130,7 +117,7 @@ def process_data_import_async(
         except Exception:
             pass
 
-        # Retry with exponential backoff
+        # Retry com exponential backoff
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
 
 
@@ -139,16 +126,16 @@ def append_data_async(
     self, process_id, file_path=None, endpoint_url=None, import_type="file"
 ):
     """
-    Asynchronously append data to existing dataset
+    Adiciona dados a um dataset existente de forma assíncrona
 
     Args:
-        process_id: ID of the DataImportProcess
-        file_path: Path to uploaded file
-        endpoint_url: URL to fetch data from
-        import_type: 'endpoint' or 'file'
+        process_id: ID do DataImportProcess
+        file_path: Caminho do arquivo enviado
+        endpoint_url: URL para buscar dados
+        import_type: 'endpoint' ou 'file'
 
     Returns:
-        dict: Append result with statistics
+        dict: Resultado da adição com estatísticas
     """
     try:
         logger.info("Starting async append for process: {process_id}")
@@ -166,12 +153,10 @@ def append_data_async(
         else:
             raise ValueError("Invalid import type or missing data source")
 
-        # Insert new data
         insert_stats = DataImportService.insert_data_orm(
             process, data, process.column_structure
         )
 
-        # Update record count
         process.record_count += insert_stats["inserted"]
         process.save()
 
@@ -183,4 +168,5 @@ def append_data_async(
         logger.error(
             "Error in async append for process {process_id}: {str(e)}", exc_info=True
         )
+        # Retry com exponential backoff
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))

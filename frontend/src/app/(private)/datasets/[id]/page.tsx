@@ -56,11 +56,9 @@ export default function DatasetDetailsPage() {
   const loadDataset = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Busca detalhes do dataset usando apiGet que trata autenticação automaticamente
       const data = await apiGet(`/api/data-import/processes/${id}/`) as Dataset
       setDataset(data)
 
-      // Busca preview dos dados
       const previewData = await apiGet(`/api/data-import/processes/${id}/preview/`) as {
         data: Record<string, string | number | boolean>[]
       }
@@ -268,7 +266,6 @@ export default function DatasetDetailsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="w-full space-y-6">
-        {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <div className="bg-blue-100 p-3 rounded-lg">
@@ -323,7 +320,6 @@ export default function DatasetDetailsPage() {
           </div>
         </div>
 
-        {/* Informações Gerais */}
         <Card>
           <CardHeader>
             <CardTitle>Informações Gerais</CardTitle>
@@ -376,7 +372,6 @@ export default function DatasetDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Prévia dos Dados */}
         <Card>
           <CardHeader>
             <CardTitle>Prévia dos Dados (primeiras linhas)</CardTitle>
@@ -424,7 +419,6 @@ export default function DatasetDetailsPage() {
         </Card>
       </div>
 
-      {/* Modal de Confirmação para Arquivar/Ativar */}
       <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -467,7 +461,6 @@ export default function DatasetDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Upload de Mais Dados */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -478,7 +471,6 @@ export default function DatasetDetailsPage() {
           </DialogHeader>
           <form onSubmit={handleUploadSubmit}>
             <div className="grid gap-4 py-4">
-              {/* Campo Upload de Arquivo */}
               <div className="grid gap-2">
                 <Label htmlFor="upload-file">
                   Selecione o Arquivo
@@ -523,7 +515,6 @@ export default function DatasetDetailsPage() {
                 </div>
               </div>
 
-              {/* Informações sobre o upload */}
               <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
                   Informações:

@@ -11,7 +11,6 @@ export default function NotFound() {
   const router = useRouter();
 
   useEffect(() => {
-    // Se não estiver autenticado, redirecionar para login após um breve delay
     if (!isAuthenticated) {
       const timer = setTimeout(() => {
         router.push('/login');

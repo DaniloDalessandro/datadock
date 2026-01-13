@@ -46,7 +46,7 @@ export function useAuth(): UseAuthReturn {
 
     checkAuth()
 
-    // Revalida ao mudar storage (sincronização multi-aba)
+    // Revalida quando o storage muda (sincronização entre abas do navegador)
     const handleStorageChange = (e: StorageEvent) => {
       if (
         e.key === "access_token" ||

@@ -16,10 +16,8 @@ export default function Error({
   const router = useRouter();
 
   useEffect(() => {
-    // Log do erro para debug
     console.error('Erro da aplicação:', error);
 
-    // Se não estiver autenticado, redirecionar para login
     if (!isAuthenticated) {
       const timer = setTimeout(() => {
         router.push('/login');

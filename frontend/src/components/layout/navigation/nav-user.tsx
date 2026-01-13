@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth" // IMPORTADO
+import { useAuth } from "@/hooks/useAuth"
 import { config } from "@/lib/config"
 
 import {
@@ -60,13 +60,12 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { logout } = useAuth() // USANDO O HOOK DE AUTENTICAÇÃO
+  const { logout } = useAuth()
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
 
-  // Form states
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -75,23 +74,19 @@ export function NavUser({
   const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleLogout = () => {
-    logout() // USANDO FUNÇÃO DE LOGOUT DO CONTEXTO
+    logout()
     router.push("/login")
   }
 
   const handleOpenAccountDialog = async () => {
-    // FIX: Fecha dropdown ANTES de abrir dialog
+    // Fecha dropdown antes de abrir dialog para evitar conflito de z-index
     setIsDropdownOpen(false)
-
-    // Pequeno delay para animação do dropdown fechar
     await new Promise(resolve => setTimeout(resolve, 100))
 
     setIsLoadingProfile(true)
     setIsAccountDialogOpen(true)
 
-    // Load user data from API
     try {
-      // O interceptor irá adicionar o cabeçalho de autorização automaticamente
       const response = await fetch(`${config.apiUrl}/api/auth/profile/`)
 
       if (response.ok) {
@@ -124,7 +119,6 @@ export function NavUser({
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           first_name: firstName,
@@ -144,7 +138,8 @@ export function NavUser({
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
 
-        window.location.reload() // Mantido por enquanto para garantir a atualização da UI
+        // TODO: Substituir reload por atualização reativa de estado
+        window.location.reload()
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || "Erro ao atualizar dados")
@@ -180,7 +175,6 @@ export function NavUser({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           old_password: oldPassword,
@@ -313,7 +307,6 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
 
-      {/* Account Dialog */}
       <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>

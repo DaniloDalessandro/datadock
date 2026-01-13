@@ -129,7 +129,10 @@ class CustomUser(AbstractUser):
         return f"{self.get_full_name() or self.username}"
 
     def generate_reset_token(self):
-        """Gera um token seguro para redefinição de senha"""
+        """
+        Gera um token seguro para redefinição de senha.
+        Token expira em 24 horas.
+        """
         self.reset_password_token = secrets.token_urlsafe(32)
         from datetime import timedelta
 
@@ -141,7 +144,7 @@ class CustomUser(AbstractUser):
 
     @staticmethod
     def generate_temporary_password():
-        """Gera uma senha temporária segura"""
+        """Gera uma senha temporária segura de 12 caracteres."""
         return get_random_string(12)
 
 

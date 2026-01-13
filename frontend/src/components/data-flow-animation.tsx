@@ -46,28 +46,24 @@ export function DataFlowAnimation() {
     window.addEventListener("resize", resizeCanvas)
 
     const animate = () => {
-      // Limpar com fade
       ctx.fillStyle = "rgba(255, 255, 255, 0.1)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Atualizar e desenhar partículas
       particles.forEach((particle) => {
         particle.y -= particle.speed
 
-        // Reset quando sair da tela
         if (particle.y < -10) {
           particle.y = canvas.height + 10
           particle.x = Math.random() * canvas.width
         }
 
-        // Desenhar partícula
         ctx.beginPath()
         ctx.fillStyle = `rgba(59, 130, 246, ${particle.opacity})`
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
         ctx.fill()
       })
 
-      // Linhas conectando partículas próximas
+      // Conecta partículas próximas com linhas graduais baseadas na distância
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x

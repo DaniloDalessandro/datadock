@@ -62,7 +62,7 @@ export function useDatasets() {
         formData.append('file', data.file)
       }
 
-      // Não define Content-Type - o browser define automaticamente para multipart/form-data
+      // Content-Type não é definido manualmente - o browser define automaticamente para multipart/form-data com boundary
       const token = localStorage.getItem('access_token')
       const headers: HeadersInit = {}
 

@@ -27,9 +27,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        """Executa o comando de indexação"""
-
-        # Verifica se Gemini está configurado
+        """Executa o comando de indexação."""
         import os
 
         gemini_key = os.getenv("GEMINI_API_KEY")
@@ -44,21 +42,18 @@ class Command(BaseCommand):
         try:
             vector_service = VectorService()
 
-            # Indexar dataset específico por ID
             if options["dataset_id"]:
                 self._index_single_dataset(
                     vector_service, dataset_id=options["dataset_id"]
                 )
                 return
 
-            # Indexar dataset específico por nome
             if options["table_name"]:
                 self._index_single_dataset(
                     vector_service, table_name=options["table_name"]
                 )
                 return
 
-            # Indexar todos os datasets
             self._index_all_datasets(vector_service, force=options["all"])
 
         except Exception as e:
@@ -66,7 +61,7 @@ class Command(BaseCommand):
             raise
 
     def _index_single_dataset(self, vector_service, dataset_id=None, table_name=None):
-        """Indexa um único dataset"""
+        """Indexa um único dataset."""
         try:
             if dataset_id:
                 dataset = DataImportProcess.objects.get(id=dataset_id)
@@ -96,13 +91,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Dataset não encontrado: {identifier}"))
 
     def _index_all_datasets(self, vector_service, force=False):
-        """Indexa todos os datasets"""
+        """Indexa todos os datasets."""
         self.stdout.write("Iniciando indexação de datasets...\n")
 
-        # Filtra datasets completos
         queryset = DataImportProcess.objects.filter(status="completed")
 
-        # Se não forçar, exclui os que já possuem embedding
         if not force:
             queryset = queryset.filter(embedding__isnull=True)
             self.stdout.write("Indexando apenas datasets sem embedding...")
@@ -117,12 +110,10 @@ class Command(BaseCommand):
 
         self.stdout.write("Total de datasets a indexar: {total}\n")
 
-        # Usa bulk_index_datasets do VectorService
         stats = vector_service.bulk_index_datasets(
             dataset_ids=list(queryset.values_list("id", flat=True))
         )
 
-        # Exibe resultados
         self.stdout.write("\n" + "=" * 50)
         self.stdout.write(self.style.SUCCESS("INDEXAÇÃO CONCLUÍDA"))
         self.stdout.write("=" * 50)
@@ -134,7 +125,7 @@ class Command(BaseCommand):
 
             if stats["errors"]:
                 self.stdout.write("\nErros encontrados:")
-                for error in stats["errors"][:10]:  # Mostra no máximo 10 erros
+                for error in stats["errors"][:10]:
                     self.stdout.write(
                         self.style.ERROR('  - {error["table_name"]}: {error["error"]}')
                     )

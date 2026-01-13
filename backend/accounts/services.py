@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 class EmailService:
     @staticmethod
     def send_temporary_password(user, temporary_password, reset_token):
-        """Envia email com senha temporária e link de redefinição"""
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
 
         subject = "Bem-vindo ao Sistema - Senha Temporária"
@@ -60,7 +59,6 @@ class EmailService:
 
     @staticmethod
     def send_password_reset_email(user, reset_token):
-        """Envia email com link de redefinição de senha"""
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
 
         subject = "Redefinição de Senha"
@@ -100,7 +98,7 @@ class EmailService:
 
 
 class UserService:
-    """Camada de serviço para lógica de negócio relacionada a usuários"""
+    """Camada de serviço para lógica de negócio relacionada a usuários."""
 
     @staticmethod
     def create_user_with_temporary_password(
@@ -110,12 +108,12 @@ class UserService:
         Cria um usuário com senha temporária e envia email de boas-vindas.
 
         Args:
-            username: Nome de usuário para o novo usuário
-            email: Email para o novo usuário
-            **extra_fields: Campos adicionais para criação do usuário
+            username: Nome de usuário
+            email: Email do usuário
+            **extra_fields: Campos adicionais
 
         Returns:
-            Tupla de (instância User, string da senha temporária)
+            Tupla (User, senha temporária)
         """
         temporary_password = User.generate_temporary_password()
 
@@ -137,13 +135,10 @@ class UserService:
     @staticmethod
     def get_user_by_email(email: str) -> Optional[User]:
         """
-        Busca um usuário pelo endereço de email.
-
-        Args:
-            email: Email a ser buscado
+        Busca usuário por email.
 
         Returns:
-            Instância User se encontrada, None caso contrário
+            User ou None
         """
         try:
             return User.objects.get(email=email)
@@ -153,13 +148,10 @@ class UserService:
     @staticmethod
     def request_password_reset(email: str) -> Optional[User]:
         """
-        Inicia processo de redefinição de senha gerando token e enviando email.
-
-        Args:
-            email: Endereço de email do usuário solicitando redefinição
+        Inicia processo de redefinição de senha.
 
         Returns:
-            None sempre (por segurança, mesma resposta independente se email existe)
+            None sempre (por segurança, não revela se email existe)
         """
         user = UserService.get_user_by_email(email)
 
@@ -181,14 +173,10 @@ class UserService:
         token: str, new_password: str
     ) -> Tuple[bool, Optional[str], Optional[User]]:
         """
-        Redefine senha do usuário usando token de redefinição válido.
-
-        Args:
-            token: Token de redefinição de senha
-            new_password: Nova senha a ser definida
+        Redefine senha usando token.
 
         Returns:
-            Tupla de (sucesso: bool, mensagem_erro: Optional[str], usuário: Optional[User])
+            Tupla (sucesso, mensagem_erro, User)
         """
         try:
             user = User.objects.get(reset_password_token=token)
@@ -211,15 +199,10 @@ class UserService:
         user: User, old_password: str, new_password: str
     ) -> Tuple[bool, Optional[str]]:
         """
-        Altera senha do usuário após validar a senha antiga.
-
-        Args:
-            user: Usuário cuja senha será alterada
-            old_password: Senha atual para validação
-            new_password: Nova senha a ser definida
+        Altera senha após validar senha atual.
 
         Returns:
-            Tupla de (sucesso: bool, mensagem_erro: Optional[str])
+            Tupla (sucesso, mensagem_erro)
         """
         if not user.check_password(old_password):
             return False, "Senha atual incorreta"
@@ -235,14 +218,10 @@ class UserService:
         email: str, password: str
     ) -> Tuple[bool, Optional[User], Optional[str]]:
         """
-        Valida credenciais do usuário para autenticação.
-
-        Args:
-            email: Endereço de email do usuário
-            password: Senha do usuário
+        Valida credenciais para autenticação.
 
         Returns:
-            Tupla de (válido: bool, usuário: Optional[User], mensagem_erro: Optional[str])
+            Tupla (válido, User, mensagem_erro)
         """
         user = UserService.get_user_by_email(email)
 

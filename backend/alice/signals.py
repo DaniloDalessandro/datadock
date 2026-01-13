@@ -16,24 +16,16 @@ logger = logging.getLogger(__name__)
 @receiver(post_save, sender=DataImportProcess)
 def auto_index_dataset(sender, instance, created, **kwargs):
     """
-    Indexa automaticamente o dataset no banco vetorial após ser salvo
-
-    Args:
-        sender: Modelo que enviou o signal
-        instance: Instância do DataImportProcess
-        created: True se o objeto foi criado, False se foi atualizado
-        **kwargs: Argumentos adicionais do signal
+    Indexa automaticamente o dataset no banco vetorial após ser salvo.
     """
-    # Só indexa se o processo foi completado
     if instance.status != "completed":
         return
 
     try:
         vector_service = VectorService()
 
-        # Se foi criado, sempre indexa
         # Se foi atualizado, reindexar para manter sincronizado
-        force = not created  # Força atualização se não for criação
+        force = not created
 
         vector_service.index_dataset(instance, force=force)
 

@@ -2,21 +2,14 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // Middleware desabilitado - autenticação é gerenciada pelo AuthContext no client-side
-  // porque o token está armazenado no localStorage (não acessível no middleware)
+  // Middleware desabilitado - autenticação gerenciada no client-side via AuthContext
+  // pois o token está no localStorage (inacessível no middleware server-side)
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc)
-     */
+    // Aplica middleware em todas as rotas exceto: API routes, arquivos estáticos, imagens e arquivos públicos
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|manifest.json).*)',
   ],
 }

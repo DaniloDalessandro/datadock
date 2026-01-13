@@ -32,7 +32,7 @@ export async function apiRequest(
 ): Promise<Response> {
   const url = `${API_BASE_URL}${endpoint}`
 
-  // Verifica se token precisa ser atualizado antes de fazer a requisição
+  // Verifica expiração do token e renova automaticamente se necessário (buffer de 1 minuto)
   const token = getAccessToken()
   if (token && isTokenExpired(token, 1)) {
     console.log("[API] Token is expired or expiring soon, refreshing...")
@@ -55,7 +55,7 @@ export async function apiRequest(
 
   let response = await fetch(url, config)
 
-  // Se receber 401, tenta atualizar token e retentar uma vez
+  // Retry com refresh do token se receber 401 (não autorizado)
   if (response.status === 401) {
     console.log("[API] Received 401, attempting token refresh...")
     const newToken = await refreshAccessToken()

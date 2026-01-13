@@ -17,10 +17,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain, NavUser } from "@/components/layout/navigation"
 
-// Navigation data for DataDock - Data Management System
 const data = {
   navMain: [
     {
@@ -40,7 +38,7 @@ const data = {
     },
     {
       title: "Site",
-      url: "/site-publico",
+      url: "/home",
       icon: Globe,
       openInNewTab: true,
     },
@@ -53,7 +51,6 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // Obtém dados do usuário do localStorage
   const [user, setUser] = React.useState({
     name: "Usuário",
     email: "user@dataport.com",
@@ -61,7 +58,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   })
 
   React.useEffect(() => {
-    // Load user data from localStorage
     const userData = localStorage.getItem("user_data")
     if (userData) {
       try {

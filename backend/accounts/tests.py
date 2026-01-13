@@ -1,6 +1,6 @@
 """
-Comprehensive test suite for accounts application
-Testing authentication, user management, password reset, and authorization
+Suite completo de testes para aplicação accounts.
+Testa autenticação, gerenciamento de usuários, redefinição de senha e autorização.
 """
 
 from datetime import timedelta
@@ -26,7 +26,7 @@ User = get_user_model()
 
 
 class CompanyModelTest(TestCase):
-    """Tests for Company model"""
+    """Testes para model Company."""
 
     def setUp(self):
         self.user = User.objects.create_user(
@@ -34,7 +34,6 @@ class CompanyModelTest(TestCase):
         )
 
     def test_create_company(self):
-        """Test creating a company"""
         company = Company.objects.create(
             name="Test Company",
             cnpj="12.345.678/0001-90",
@@ -48,7 +47,6 @@ class CompanyModelTest(TestCase):
         self.assertEqual(str(company), "Test Company")
 
     def test_company_ordering(self):
-        """Test companies are ordered by name"""
         Company.objects.create(name="Zebra Company", cnpj="11.111.111/0001-11")
         Company.objects.create(name="Alpha Company", cnpj="22.222.222/0001-22")
 
@@ -58,10 +56,9 @@ class CompanyModelTest(TestCase):
 
 
 class CustomUserModelTest(TestCase):
-    """Tests for CustomUser model"""
+    """Testes para model CustomUser."""
 
     def test_create_user(self):
-        """Test creating a basic user"""
         user = User.objects.create_user(
             username="testuser",
             email="test@example.com",
@@ -77,7 +74,6 @@ class CustomUserModelTest(TestCase):
         self.assertFalse(user.must_change_password)
 
     def test_user_str_representation(self):
-        """Test user string representation"""
         user = User.objects.create_user(
             username="testuser",
             email="test@example.com",
@@ -87,14 +83,12 @@ class CustomUserModelTest(TestCase):
         )
         self.assertEqual(str(user), "John Doe")
 
-        # Test without name
         user2 = User.objects.create_user(
             username="noname", email="noname@example.com", password="testpass123"
         )
         self.assertEqual(str(user2), "noname")
 
     def test_generate_reset_token(self):
-        """Test password reset token generation"""
         user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
         )
@@ -105,19 +99,16 @@ class CustomUserModelTest(TestCase):
         self.assertIsNotNone(user.reset_password_token)
         self.assertIsNotNone(user.reset_password_token_expires)
 
-        # Token should expire in approximately 24 hours
         time_diff = user.reset_password_token_expires - timezone.now()
         self.assertAlmostEqual(time_diff.total_seconds(), 24 * 3600, delta=10)
 
     def test_generate_temporary_password(self):
-        """Test temporary password generation"""
         password = User.generate_temporary_password()
 
         self.assertIsNotNone(password)
         self.assertEqual(len(password), 12)
 
     def test_user_with_companies(self):
-        """Test user-company many-to-many relationship"""
         user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
         )
@@ -133,10 +124,9 @@ class CustomUserModelTest(TestCase):
 
 
 class InternalProfileModelTest(TestCase):
-    """Tests for InternalProfile model"""
+    """Testes para model InternalProfile."""
 
     def test_create_internal_profile(self):
-        """Test creating internal profile"""
         user = User.objects.create_user(
             username="internal",
             email="internal@example.com",
@@ -155,10 +145,9 @@ class InternalProfileModelTest(TestCase):
 
 
 class ExternalProfileModelTest(TestCase):
-    """Tests for ExternalProfile model"""
+    """Testes para model ExternalProfile."""
 
     def test_create_external_profile(self):
-        """Test creating external profile"""
         user = User.objects.create_user(
             username="external",
             email="external@example.com",
@@ -180,10 +169,9 @@ class ExternalProfileModelTest(TestCase):
 
 
 class UserSerializerTest(TestCase):
-    """Tests for UserSerializer"""
+    """Testes para UserSerializer."""
 
     def test_create_user_with_temporary_password(self):
-        """Test user creation generates temporary password"""
         serializer = UserSerializer(
             data={
                 "username": "newuser",
@@ -202,7 +190,7 @@ class UserSerializerTest(TestCase):
 
 
 class AuthenticationAPITest(APITestCase):
-    """Tests for authentication endpoints"""
+    """Testes para endpoints de autenticação."""
 
     def setUp(self):
         self.client = APIClient()
@@ -215,7 +203,6 @@ class AuthenticationAPITest(APITestCase):
         )
 
     def test_login_with_email(self):
-        """Test login with email instead of username"""
         url = "/api/auth/login"
         data = {"email": "test@example.com", "password": "testpass123"}
 
@@ -228,7 +215,6 @@ class AuthenticationAPITest(APITestCase):
         self.assertEqual(response.data["user"]["email"], "test@example.com")
 
     def test_login_with_wrong_password(self):
-        """Test login fails with wrong password"""
         url = "/api/auth/login"
         data = {"email": "test@example.com", "password": "wrongpassword"}
 
@@ -237,7 +223,6 @@ class AuthenticationAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_login_with_inactive_user(self):
-        """Test login fails with inactive user"""
         self.user.is_active = False
         self.user.save()
 
@@ -249,8 +234,6 @@ class AuthenticationAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_logout(self):
-        """Test logout endpoint"""
-        # First login to get tokens
         refresh = RefreshToken.for_user(self.user)
 
         url = "/api/auth/logout"
@@ -258,13 +241,11 @@ class AuthenticationAPITest(APITestCase):
 
         response = self.client.post(url, {"refresh": str(refresh)}, format="json")
 
-        # Accept either 200 or 400 (400 if token blacklist not enabled)
         self.assertIn(
             response.status_code, [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
         )
 
     def test_get_current_user(self):
-        """Test /me endpoint returns current user"""
         refresh = RefreshToken.for_user(self.user)
 
         url = "/api/users/me/"
@@ -277,7 +258,7 @@ class AuthenticationAPITest(APITestCase):
 
 
 class PasswordResetAPITest(APITestCase):
-    """Tests for password reset flow"""
+    """Testes para fluxo de redefinição de senha."""
 
     def setUp(self):
         self.client = APIClient()
@@ -286,7 +267,6 @@ class PasswordResetAPITest(APITestCase):
         )
 
     def test_request_password_reset(self):
-        """Test password reset request"""
         url = "/api/users/request_password_reset/"
         data = {"email": "test@example.com"}
 
@@ -294,23 +274,18 @@ class PasswordResetAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Verify token was generated
         self.user.refresh_from_db()
         self.assertIsNotNone(self.user.reset_password_token)
 
     def test_request_password_reset_nonexistent_email(self):
-        """Test password reset with non-existent email doesn't reveal info"""
         url = "/api/users/request_password_reset/"
         data = {"email": "nonexistent@example.com"}
 
         response = self.client.post(url, data, format="json")
 
-        # Should still return success for security
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_reset_password_with_valid_token(self):
-        """Test password reset with valid token"""
-        # Generate reset token
         token = self.user.generate_reset_token()
 
         url = "/api/users/reset_password/"
@@ -324,15 +299,12 @@ class PasswordResetAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Verify password was changed
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("newpassword123"))
         self.assertIsNone(self.user.reset_password_token)
         self.assertFalse(self.user.must_change_password)
 
     def test_reset_password_with_expired_token(self):
-        """Test password reset with expired token"""
-        # Generate token and make it expired
         token = self.user.generate_reset_token()
         self.user.reset_password_token_expires = timezone.now() - timedelta(hours=1)
         self.user.save()
@@ -349,7 +321,6 @@ class PasswordResetAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_reset_password_with_invalid_token(self):
-        """Test password reset with invalid token"""
         url = "/api/users/reset_password/"
         data = {
             "token": "invalid-token-12345",
@@ -363,7 +334,7 @@ class PasswordResetAPITest(APITestCase):
 
 
 class ChangePasswordAPITest(APITestCase):
-    """Tests for change password endpoint"""
+    """Testes para endpoint de alteração de senha."""
 
     def setUp(self):
         self.client = APIClient()
@@ -374,7 +345,6 @@ class ChangePasswordAPITest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Bearer {refresh.access_token}")
 
     def test_change_password_success(self):
-        """Test successful password change"""
         url = "/api/users/change_password/"
         data = {
             "old_password": "oldpassword123",
@@ -386,13 +356,11 @@ class ChangePasswordAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Verify password was changed
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("newpassword123"))
         self.assertFalse(self.user.must_change_password)
 
     def test_change_password_wrong_old_password(self):
-        """Test password change with wrong old password"""
         url = "/api/users/change_password/"
         data = {
             "old_password": "wrongpassword",
@@ -418,8 +386,7 @@ class ChangePasswordAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_change_password_unauthenticated(self):
-        """Test password change requires authentication"""
-        self.client.credentials()  # Remove credentials
+        self.client.credentials()
 
         url = "/api/users/change_password/"
         data = {
@@ -434,7 +401,7 @@ class ChangePasswordAPITest(APITestCase):
 
 
 class CompanyAPITest(APITestCase):
-    """Tests for Company endpoints"""
+    """Testes para endpoints de Company."""
 
     def setUp(self):
         self.client = APIClient()
@@ -445,7 +412,6 @@ class CompanyAPITest(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Bearer {refresh.access_token}")
 
     def test_create_company_authenticated(self):
-        """Test creating company when authenticated"""
         url = "/api/companies/"
         data = {
             "name": "New Company",
@@ -459,7 +425,6 @@ class CompanyAPITest(APITestCase):
         self.assertEqual(Company.objects.count(), 1)
 
     def test_list_companies_authenticated(self):
-        """Test listing companies when authenticated"""
         Company.objects.create(name="Company 1", cnpj="11.111.111/0001-11")
         Company.objects.create(name="Company 2", cnpj="22.222.222/0001-22")
 
@@ -467,7 +432,6 @@ class CompanyAPITest(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Response might be paginated, check results key or direct data
         data = (
             response.data.get("results", response.data)
             if isinstance(response.data, dict)
@@ -476,8 +440,7 @@ class CompanyAPITest(APITestCase):
         self.assertEqual(len(data), 2)
 
     def test_company_api_requires_authentication(self):
-        """Test company API requires authentication"""
-        self.client.credentials()  # Remove credentials
+        self.client.credentials()
 
         url = "/api/companies/"
         response = self.client.get(url)

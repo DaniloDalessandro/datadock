@@ -1,5 +1,5 @@
 """
-Alice AI Assistant Views
+Views da Assistente de IA Alice
 """
 
 import json
@@ -24,19 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 class AliceRateThrottle(UserRateThrottle):
-    """Custom throttle for Alice API - 30 requests per minute"""
+    """Throttle customizado para API Alice - 30 requisições por minuto"""
 
     rate = "30/min"
 
 
 class AliceChatView(APIView):
     """
-    Alice AI Assistant powered by Google Gemini
+    Assistente de IA Alice alimentada por Google Gemini.
     POST /api/alice/chat/
 
     Request body:
     {
-        "message": "User's question about datasets"
+        "message": "Pergunta do usuário sobre datasets"
     }
     """
 
@@ -45,7 +45,7 @@ class AliceChatView(APIView):
 
     def post(self, request):
         """
-        Process user question and return AI response with dataset context using RAG
+        Processa pergunta do usuário e retorna resposta da IA com contexto de datasets usando RAG.
         """
         try:
             user_message = request.data.get("message", "").strip()
@@ -56,7 +56,6 @@ class AliceChatView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Get Gemini API key from environment
             api_key = os.getenv("GEMINI_API_KEY")
             if not api_key or api_key == "your-gemini-api-key-here":
                 return Response(
@@ -67,14 +66,12 @@ class AliceChatView(APIView):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-            # Configure Gemini
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
 
-            # Try to use RAG for better context, fallback to traditional if needed
+            # Tenta usar RAG para melhor contexto, com fallback para contexto tradicional se necessário
             context = self._get_rag_context(user_message)
 
-            # Build prompt with context
             system_prompt = f"""Você é a Alice, assistente virtual do DataPort - um sistema de gestão de dados portuários.
 Você deve responder perguntas sobre os datasets cadastrados no sistema de forma clara e objetiva.
 
@@ -95,7 +92,6 @@ PERGUNTA DO USUÁRIO:
 
 Sua resposta:"""
 
-            # Get response from Gemini with retry logic
             response_text = self._get_gemini_response_with_retry(model, system_prompt)
 
             return Response(
@@ -112,7 +108,6 @@ Sua resposta:"""
             error_message = str(e)
             logger.error(f"Error in Alice chat: {traceback.format_exc()}")
 
-            # Handle rate limit errors with friendly message
             if "429" in error_message or "RATE_LIMIT_EXCEEDED" in error_message:
                 return Response(
                     {
@@ -122,7 +117,6 @@ Sua resposta:"""
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
 
-            # Handle quota errors
             if "quota" in error_message.lower() or "limit" in error_message.lower():
                 return Response(
                     {
@@ -142,7 +136,7 @@ Sua resposta:"""
 
     def _get_gemini_response_with_retry(self, model, prompt, max_retries=3):
         """
-        Get response from Gemini with exponential backoff retry
+        Obtém resposta do Gemini com retry usando backoff exponencial.
         """
         for attempt in range(max_retries):
             try:
@@ -151,36 +145,33 @@ Sua resposta:"""
             except Exception as e:
                 error_message = str(e)
 
-                # If it's a rate limit error and not the last attempt, retry with backoff
+                # Se for erro de rate limit e não for a última tentativa, retentar com backoff exponencial
                 if (
                     "429" in error_message or "RATE_LIMIT_EXCEEDED" in error_message
                 ) and attempt < max_retries - 1:
-                    wait_time = (
-                        2**attempt
-                    ) * 3  # Exponential backoff: 3, 6, 12 seconds
+                    wait_time = (2**attempt) * 3  # Backoff exponencial: 3, 6, 12 segundos
                     logger.warning(
                         "Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}"
                     )
                     time.sleep(wait_time)
                     continue
 
-                # If it's the last attempt or a different error, raise it
+                # Se for a última tentativa ou erro diferente, lança a exceção
                 raise
 
     def _get_rag_context(self, user_message):
         """
-        Get dataset context using RAG (Retrieval Augmented Generation)
-        Falls back to traditional context if RAG is not available
+        Obtém contexto de datasets usando RAG (Retrieval Augmented Generation).
+        Faz fallback para contexto tradicional se RAG não estiver disponível.
         """
         try:
-            # Try to use vector search for better context
+            # Tenta usar busca vetorial (RAG) para melhor contexto semântico
             vector_service = VectorService()
             similar_datasets = vector_service.search_similar_datasets(
                 query=user_message, limit=5, only_public=False
             )
 
             if similar_datasets:
-                # Build RAG context with most relevant datasets
                 context = {
                     "tipo_busca": "RAG - Busca Semântica (Top 5 mais relevantes)",
                     "datasets_relevantes": [],
@@ -199,7 +190,6 @@ Sua resposta:"""
                         "criado_em": dataset.created_at.strftime("%d/%m/%Y"),
                     }
 
-                    # Add column info if available
                     if dataset.column_structure:
                         dataset_info["colunas"] = list(dataset.column_structure.keys())[
                             :10
@@ -207,7 +197,6 @@ Sua resposta:"""
 
                     context["datasets_relevantes"].append(dataset_info)
 
-                # Add summary statistics
                 total_records = sum(
                     d.record_count or 0
                     for d in [r["dataset"] for r in similar_datasets]
@@ -223,30 +212,28 @@ Sua resposta:"""
         except Exception as e:
             logger.warning(f"RAG context failed, falling back to traditional: {str(e)}")
 
-        # Fallback to traditional cached context
+        # Fallback para contexto tradicional com cache
         return self._get_cached_dataset_context()
 
     def _get_cached_dataset_context(self):
         """
-        Get dataset context with caching (5 minutes)
+        Obtém contexto de datasets com cache de 5 minutos.
         """
         cache_key = "alice_dataset_context"
         context = cache.get(cache_key)
 
         if context is None:
             context = self._build_dataset_context()
-            cache.set(cache_key, context, 300)  # Cache for 5 minutes
+            cache.set(cache_key, context, 300)  # Cache por 5 minutos
 
         return context
 
     def _build_dataset_context(self):
         """
-        Build comprehensive context about datasets for Gemini
+        Constrói contexto abrangente sobre datasets para o Gemini.
         """
-        # Get all active processes
         all_processes = DataImportProcess.objects.all()
 
-        # Status counts
         status_counts = all_processes.aggregate(
             active=Count("id", filter=Q(status="active")),
             inactive=Count("id", filter=Q(status="inactive")),
@@ -254,10 +241,8 @@ Sua resposta:"""
             pending=Count("id", filter=Q(status="pending")),
         )
 
-        # Total records and storage
         total_records = sum(p.record_count or 0 for p in all_processes)
 
-        # Dataset list with details
         datasets_info = []
         for process in all_processes:
             dataset_info = {
@@ -275,19 +260,16 @@ Sua resposta:"""
                 ),
             }
 
-            # Add column names if available
             if process.column_structure:
                 dataset_info["nomes_colunas"] = list(process.column_structure.keys())[
                     :10
-                ]  # First 10 columns
+                ]
 
             datasets_info.append(dataset_info)
 
-        # Calculate totals and averages
         total_datasets = len(all_processes)
         avg_records = total_records / total_datasets if total_datasets > 0 else 0
 
-        # Build context dictionary
         context = {
             "resumo": {
                 "total_datasets": total_datasets,
@@ -298,12 +280,9 @@ Sua resposta:"""
                 "total_registros": total_records,
                 "media_registros_por_dataset": round(avg_records, 0),
             },
-            "datasets": datasets_info[
-                :50
-            ],  # Limit to 50 datasets to avoid token limits
+            "datasets": datasets_info[:50],  # Limita a 50 datasets para evitar limite de tokens
         }
 
-        # Add note if datasets were truncated
         if total_datasets > 50:
             context["nota"] = "Mostrando 50 de {total_datasets} datasets disponíveis"
 
@@ -312,14 +291,14 @@ Sua resposta:"""
 
 class AliceHealthView(APIView):
     """
-    Health check for Alice service
+    Health check para serviço Alice.
     GET /api/alice/health/
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Check if Alice service is healthy"""
+        """Verifica se o serviço Alice está saudável"""
         gemini_key = os.getenv("GEMINI_API_KEY")
 
         health_data = {

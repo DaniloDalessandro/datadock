@@ -7,16 +7,14 @@ export default function RootPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Verificar se já está logado
     const token = localStorage.getItem("access_token")
     if (token) {
       router.push("/dashboard")
     } else {
-      router.push("/login")
+      router.push("/home")
     }
   }, [router])
 
-  // Loading enquanto redireciona
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 to-blue-50">
       <div className="text-center">

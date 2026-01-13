@@ -1,7 +1,5 @@
 """
-Alice Admin Configuration
-"""
+Configuração do Admin para o assistente Alice.
 
-# Alice AI Assistant app
-# This app provides AI-powered chat assistance using Google Gemini
-# No models to register - it's a service-only app
+App de serviço apenas - sem modelos para registrar.
+"""

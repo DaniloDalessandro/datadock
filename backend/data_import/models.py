@@ -6,7 +6,7 @@ User = get_user_model()
 
 class DataImportProcess(models.Model):
     """
-    Model to track data import processes from external endpoints
+    Model para rastrear processos de importação de dados de endpoints externos
     """
 
     STATUS_CHOICES = [
@@ -17,7 +17,7 @@ class DataImportProcess(models.Model):
     table_name = models.CharField(
         max_length=255,
         unique=True,
-        db_index=True,  # Already unique, but explicit index for searches
+        db_index=True,
         verbose_name="Nome da Tabela",
         help_text="Nome da tabela criada no banco de dados",
     )
@@ -30,7 +30,7 @@ class DataImportProcess(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default="active",
-        db_index=True,  # Indexed for filtering by status
+        db_index=True,
         verbose_name="Status",
     )
     record_count = models.IntegerField(
@@ -76,8 +76,8 @@ class DataImportProcess(models.Model):
 
 class ImportedDataRecord(models.Model):
     """
-    Model to store imported data records using JSONField
-    This replaces the anti-pattern of creating dynamic tables
+    Model para armazenar registros de dados importados usando JSONField
+    Substitui o anti-pattern de criar tabelas dinâmicas
     """
 
     process = models.ForeignKey(
@@ -105,7 +105,6 @@ class ImportedDataRecord(models.Model):
             models.Index(fields=["process", "row_hash"]),
             models.Index(fields=["process", "created_at"]),
         ]
-        # Ensure no duplicate records per process
         unique_together = [["process", "row_hash"]]
 
     def __str__(self):
@@ -114,19 +113,18 @@ class ImportedDataRecord(models.Model):
     @staticmethod
     def generate_row_hash(data: dict) -> str:
         """
-        Generate MD5 hash of data for duplicate detection
+        Gera hash MD5 dos dados para detecção de duplicatas
         """
         import hashlib
         import json
 
-        # Sort keys to ensure consistent hashing
         data_str = json.dumps(data, sort_keys=True, ensure_ascii=False)
         return hashlib.md5(data_str.encode()).hexdigest()
 
 
 class AsyncTask(models.Model):
     """
-    Model to track async Celery task status
+    Model para rastrear status de tasks assíncronas do Celery
     """
 
     TASK_STATUS_CHOICES = [

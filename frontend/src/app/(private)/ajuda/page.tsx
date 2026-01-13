@@ -49,7 +49,6 @@ export default function AjudaPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <HelpCircle className="h-8 w-8 text-blue-600" />
         <div>
@@ -58,7 +57,6 @@ export default function AjudaPage() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -87,7 +85,6 @@ export default function AjudaPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Start Guide */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -125,7 +122,6 @@ export default function AjudaPage() {
         </CardContent>
       </Card>
 
-      {/* Tutoriais */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
@@ -209,7 +205,6 @@ export default function AjudaPage() {
         )}
       </div>
 
-      {/* FAQ Section */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />

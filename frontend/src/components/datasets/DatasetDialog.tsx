@@ -64,7 +64,7 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
     setUploadStatus("Preparando upload...")
 
     try {
-      // Simula progresso
+      // Simula progresso visual até 90% enquanto aguarda resposta real
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -118,7 +118,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          {/* Loading Progress */}
           {isSubmitting && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4 space-y-4">
               <div className="flex items-center gap-3">
@@ -140,7 +139,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
           )}
 
           <div className="grid gap-4 py-4">
-            {/* Campo Nome */}
             <div className="grid gap-2">
               <Label htmlFor="name">
                 Nome do Dataset
@@ -160,7 +158,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
               </p>
             </div>
 
-            {/* Tipo de Importação */}
             <div className="grid gap-2">
               <Label>
                 Tipo de Importação
@@ -186,7 +183,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
               </RadioGroup>
             </div>
 
-            {/* Campo Endpoint - condicional */}
             {importType === "endpoint" && (
               <div className="grid gap-2">
                 <Label htmlFor="endpoint">
@@ -208,7 +204,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
               </div>
             )}
 
-            {/* Campo Upload de Arquivo - condicional */}
             {importType === "file" && (
               <div className="grid gap-2">
                 <Label htmlFor="file">

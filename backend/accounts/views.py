@@ -40,10 +40,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
     ordering = ["name"]
 
     def get_queryset(self):
-        """
-        Retorna empresas baseado nas permissões do usuário.
-        Staff vê todas, usuários comuns apenas suas empresas.
-        """
+        """Retorna empresas baseadas nas permissões: staff vê todas, usuários comuns apenas suas empresas."""
         user = self.request.user
         if user.is_staff or user.is_superuser:
             return Company.objects.all()
@@ -67,9 +64,6 @@ class UserViewSet(viewsets.ModelViewSet):
     ordering = ["username"]
 
     def get_permissions(self):
-        """
-        Define permissões específicas por ação.
-        """
         if self.action in ["me", "change_password"]:
             return [IsAuthenticated()]
         elif self.action in ["request_password_reset", "reset_password"]:
@@ -78,7 +72,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], permission_classes=[AllowAny])
     def request_password_reset(self, request):
-        """Solicita redefinição de senha usando camada de serviço"""
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -93,7 +86,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], permission_classes=[AllowAny])
     def reset_password(self, request):
-        """Redefine a senha usando o token via camada de serviço"""
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -115,7 +107,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def change_password(self, request):
-        """Altera a senha do usuário autenticado via camada de serviço"""
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -138,7 +129,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def me(self, request):
-        """Retorna os dados do usuário autenticado"""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
@@ -180,14 +170,14 @@ class ExternalProfileViewSet(viewsets.ModelViewSet):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """View de login customizada com suporte a email"""
+    """View de login customizada com suporte a email."""
 
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
 
 
 class LogoutView(APIView):
-    """View de logout que coloca o refresh token na blacklist"""
+    """View de logout que coloca o refresh token na blacklist."""
 
     permission_classes = [IsAuthenticated]
 

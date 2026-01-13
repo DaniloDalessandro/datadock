@@ -52,7 +52,6 @@ interface PublicDataset {
 interface PublicDataResponse {
   success: boolean;
   data: Record<string, string | number | boolean>[];
-  // Adiciona outras propriedades if they exist in the response
 }
 
 export default function DatasetsPublicosPage() {
@@ -67,7 +66,6 @@ export default function DatasetsPublicosPage() {
   const [activeFilters, setActiveFilters] = useState<Record<string, FilterValue>>({})
   const [filteredData, setFilteredData] = useState<Record<string, string | number | boolean>[]>([])
 
-  // Busca datasets públicos ao montar
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
@@ -134,16 +132,13 @@ export default function DatasetsPublicosPage() {
     try {
       const API_BASE_URL = config.apiUrl
 
-      // Monta os parâmetros da URL
       const params = new URLSearchParams()
       params.append('file_format', downloadFormat)
 
-      // Adiciona colunas selecionadas
       if (selectedColumns.length > 0) {
         params.append('columns', selectedColumns.join(','))
       }
 
-      // Adiciona filtros se existirem
       if (Object.keys(activeFilters).length > 0) {
         params.append('filters', JSON.stringify(activeFilters))
         console.log('[DOWNLOAD] Enviando filtros:', activeFilters)
@@ -301,7 +296,6 @@ export default function DatasetsPublicosPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b-2 border-blue-200 shadow-sm">
         <div className="container mx-auto px-6 py-12">
           <div className="flex items-center gap-6">
@@ -322,9 +316,7 @@ export default function DatasetsPublicosPage() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
-        {/* Datasets Grid */}
         {isLoadingDatasets ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-blue-500 mr-4" />
@@ -384,7 +376,6 @@ export default function DatasetsPublicosPage() {
         )}
       </div>
 
-      {/* Dataset Detail Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => {
         setIsModalOpen(open)
         if (!open) {

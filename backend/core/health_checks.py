@@ -1,5 +1,5 @@
 """
-Health check utilities for monitoring system status
+Utilitários de health check para monitoramento do sistema
 """
 
 import logging
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def check_database():
     """
-    Check if database connection is healthy
+    Verifica se a conexão com o database está saudável
     """
     try:
         connection.ensure_connection()
@@ -31,10 +31,9 @@ def check_database():
 
 def check_cache():
     """
-    Check if cache (Redis) is healthy
+    Verifica se o cache (Redis) está saudável
     """
     try:
-        # Try to set and get a test key
         test_key = "__health_check__"
         test_value = "ok"
         cache.set(test_key, test_value, timeout=10)
@@ -52,12 +51,11 @@ def check_cache():
 
 def check_celery():
     """
-    Check if Celery workers are running
+    Verifica se os workers do Celery estão rodando
     """
     try:
         from celery import current_app
 
-        # Inspect active workers
         inspect = current_app.control.inspect(timeout=2.0)
         stats = inspect.stats()
 
@@ -80,7 +78,7 @@ def check_celery():
 
 def check_disk_space():
     """
-    Check available disk space
+    Verifica espaço disponível em disco
     """
     try:
         import shutil
@@ -89,7 +87,6 @@ def check_disk_space():
 
         total, used, free = shutil.disk_usage(settings.BASE_DIR)
 
-        # Convert to GB
         total_gb = total / (1024**3)
         used_gb = used / (1024**3)
         free_gb = free / (1024**3)
@@ -120,7 +117,7 @@ def check_disk_space():
 
 def get_system_health():
     """
-    Get overall system health status
+    Retorna status de saúde geral do sistema
     """
     checks = {
         "database": check_database(),
@@ -129,7 +126,7 @@ def get_system_health():
         "disk": check_disk_space(),
     }
 
-    # Determine overall status
+    # Determina status geral baseado nos componentes
     statuses = [check["status"] for check in checks.values()]
 
     if "critical" in statuses or "unhealthy" in statuses:

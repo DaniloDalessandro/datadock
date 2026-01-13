@@ -97,7 +97,6 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "updated_at", "must_change_password"]
 
     def create(self, validated_data):
-        """Cria usuário usando camada de serviço"""
         from .services import UserService
 
         username = validated_data.pop("username")
@@ -137,7 +136,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Serializer customizado para permitir login com email ao invés de username"""
+    """Serializer customizado para permitir login com email ao invés de username."""
 
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, write_only=True)
@@ -148,7 +147,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             del self.fields["username"]
 
     def validate(self, attrs):
-        """Valida credenciais usando camada de serviço"""
         from .services import UserService
 
         email = attrs.get("email")

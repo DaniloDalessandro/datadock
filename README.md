@@ -16,6 +16,7 @@
 - [Funcionalidades](#-funcionalidades)
 - [Tecnologias](#-tecnologias)
 - [Arquitetura](#-arquitetura)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Quick Start](#-quick-start)
   - [Com Docker (Recomendado)](#com-docker-recomendado)
   - [Instalação Manual](#instalação-manual)
@@ -201,6 +202,127 @@
 - **Factory Pattern**: Criação de usuários e processos
 - **Dependency Injection**: Injeção de dependências via Django
 - **Clean Architecture**: Separação clara de responsabilidades
+
+---
+
+## 📁 Estrutura do Projeto
+
+### Estrutura Geral
+
+```
+dataport/
+├── backend/                    # Django REST API
+├── frontend/                   # Next.js Application
+├── nginx/                      # Configuração Nginx
+├── docker-compose.yml          # Docker Compose
+└── README.md                   # Documentação
+```
+
+### Backend (Django)
+
+```
+backend/
+├── accounts/                   # Autenticação e usuários
+│   ├── management/commands/   # Comandos personalizados
+│   ├── models.py              # User, Profile
+│   ├── serializers.py
+│   ├── services.py            # Lógica de negócio
+│   ├── views.py               # API Views
+│   └── tests.py
+│
+├── alice/                      # Assistente AI (RAG)
+│   ├── management/commands/
+│   ├── services/
+│   │   └── vector_service.py  # Busca vetorial
+│   ├── models.py              # DatasetVector
+│   └── views.py
+│
+├── data_import/                # Importação de dados
+│   ├── models.py              # ImportProcess, DataTable
+│   ├── services.py
+│   ├── tasks.py               # Celery tasks
+│   ├── views.py
+│   └── cache.py               # Cache Redis
+│
+└── core/                       # Settings Django
+    ├── settings.py
+    ├── urls.py
+    ├── celery.py
+    └── health_checks.py
+```
+
+### Frontend (Next.js)
+
+```
+frontend/src/
+├── app/                                # Next.js App Router
+│   ├── (auth)/                         # 🔐 Grupo de autenticação
+│   │   └── login/page.tsx
+│   │
+│   ├── (private)/                      # 🔒 Rotas autenticadas
+│   │   ├── dashboard/page.tsx
+│   │   ├── datasets/
+│   │   │   ├── page.tsx
+│   │   │   └── [id]/page.tsx
+│   │   ├── alice/page.tsx
+│   │   ├── ajuda/page.tsx
+│   │   └── layout.tsx                  # Layout com sidebar
+│   │
+│   ├── (public)/                       # 🌐 Rotas públicas
+│   │   ├── home/page.tsx               # Landing page
+│   │   └── datasets-publicos/page.tsx
+│   │
+│   ├── layout.tsx                      # Layout raiz
+│   └── page.tsx                        # Redirect inicial
+│
+├── components/
+│   ├── layout/                         # Componentes de layout
+│   │   ├── sidebar/
+│   │   │   └── app-sidebar.tsx
+│   │   └── navigation/
+│   │       ├── nav-main.tsx
+│   │       └── nav-user.tsx
+│   │
+│   ├── auth/                           # Autenticação
+│   │   ├── AuthGuard.tsx
+│   │   └── LoginForm.tsx
+│   │
+│   ├── datasets/
+│   │   └── DatasetDialog.tsx
+│   │
+│   ├── filters/                        # Filtros avançados
+│   │   ├── ColumnFilterPopover.tsx
+│   │   ├── StringFilter.tsx
+│   │   ├── NumberFilter.tsx
+│   │   ├── DateFilter.tsx
+│   │   └── CategoryFilter.tsx
+│   │
+│   └── ui/                             # shadcn/ui components
+│
+├── hooks/                              # Custom hooks
+│   ├── useAuth.ts
+│   └── useDatasets.ts
+│
+└── lib/                                # Utilitários
+    ├── api.ts
+    ├── auth.ts
+    └── config.ts
+```
+
+### Convenções
+
+**Rotas (App Router)**:
+- `(auth)` - Grupo de autenticação (login)
+- `(private)` - Rotas protegidas (dashboard, datasets, alice)
+- `(public)` - Rotas públicas (home, datasets públicos)
+- `[id]` - Rotas dinâmicas
+
+**Componentes**:
+- `layout/` - Estrutura (sidebar, navigation, header)
+- `auth/` - Autenticação (AuthGuard, LoginForm)
+- `datasets/` - Específicos de datasets
+- `filters/` - Componentes de filtro
+- `ui/` - Componentes genéricos (shadcn/ui)
 
 ---
 
@@ -1528,8 +1650,12 @@ Seu PR será revisado. Mudanças podem ser solicitadas.
 - **Backend data_import**: 0% ⚠️ (em desenvolvimento)
 - **Frontend**: ~30% ⚠️ (em desenvolvimento)
 
-### Melhorias Recentes (v1.0.5)
+### Melhorias Recentes (v1.0.6)
 
+- ✅ Reorganização completa da estrutura do frontend
+  - Grupos de rotas: `(auth)`, `(private)`, `(public)`
+  - Componentes organizados em: `layout/`, `auth/`, `datasets/`, `filters/`
+  - Documentação completa da estrutura no README
 - ✅ Correção de bug crítico: Timestamp serialization (datasets com colunas de data)
 - ✅ Filtros de categoria para colunas TEXT (seleção de valores únicos)
 - ✅ Favicon/ícone do site (database icon azul)

@@ -45,14 +45,10 @@ export function ColumnFilterPopover({
     value || getDefaultFilter(column, columnType)
   )
 
-  // Sincroniza filtro local quando o valor da prop muda
   useEffect(() => {
     setLocalFilter(value || getDefaultFilter(column, columnType))
   }, [value, column, columnType])
 
-  /**
-   * Retorna configuração padrão de filtro baseado no tipo da coluna.
-   */
   function getDefaultFilter(col: string, type: string): FilterValue {
     switch (type) {
       case "number":
@@ -84,9 +80,6 @@ export function ColumnFilterPopover({
     setOpen(false)
   }
 
-  /**
-   * Renderiza o componente de filtro apropriado baseado no tipo da coluna.
-   */
   const renderFilter = () => {
     switch (columnType) {
       case "number":

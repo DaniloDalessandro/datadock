@@ -14,13 +14,12 @@ from .models import DataImportProcess
 
 logger = logging.getLogger(__name__)
 
-# Suppress SSL warnings when verification is disabled
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 
 class DataImportService:
     """
-    Service to handle dynamic data import from external endpoints
+    Serviço para manipular importação dinâmica de dados de endpoints externos e arquivos.
     """
 
     TYPE_MAPPING = {
@@ -34,7 +33,7 @@ class DataImportService:
     @staticmethod
     def sanitize_column_name(column_name: str) -> str:
         """
-        Sanitize column names to be SQL-safe
+        Sanitiza nomes de colunas para serem seguros em SQL.
         """
         sanitized = re.sub(r"[^\w\s]", "", str(column_name))
         sanitized = re.sub(r"\s+", "_", sanitized)
@@ -104,32 +103,52 @@ class DataImportService:
     @staticmethod
     def read_file_to_dataframe(file: UploadedFile) -> pd.DataFrame:
         """
-        Read uploaded file (Excel or CSV) into a pandas DataFrame
+        Lê arquivo enviado (Excel ou CSV) e converte em pandas DataFrame.
         """
         file_name = file.name.lower()
 
         try:
-            # Reset file pointer to the beginning
             file.seek(0)
 
             if file_name.endswith(".csv"):
-                # Try different encodings for CSV
-                try:
-                    df = pd.read_csv(file, encoding="utf-8")
-                except UnicodeDecodeError:
-                    file.seek(0)  # Reset file pointer
+                import csv
+
+                encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
+                detected_encoding = None
+                detected_delimiter = None
+
+                for encoding in encodings:
                     try:
-                        df = pd.read_csv(file, encoding="latin-1")
-                    except UnicodeDecodeError:
                         file.seek(0)
-                        df = pd.read_csv(file, encoding="cp1252")
+                        sample = file.read(8192).decode(encoding)
+                        file.seek(0)
+
+                        try:
+                            sniffer = csv.Sniffer()
+                            detected_delimiter = sniffer.sniff(sample).delimiter
+                        except:
+                            # Fallback: se Sniffer falhar, tenta delimitadores comuns
+                            delimiters = [',', ';', '\t', '|']
+                            line = sample.split('\n')[0]
+                            delimiter_counts = {d: line.count(d) for d in delimiters}
+                            detected_delimiter = max(delimiter_counts, key=delimiter_counts.get)
+
+                        detected_encoding = encoding
+                        break
+                    except (UnicodeDecodeError, AttributeError):
+                        continue
+
+                encoding_to_use = detected_encoding or "utf-8"
+                delimiter_to_use = detected_delimiter or ","
+
+                file.seek(0)
+                df = pd.read_csv(file, encoding=encoding_to_use, delimiter=delimiter_to_use)
 
             elif file_name.endswith(".xlsx"):
-                # For .xlsx files, use openpyxl engine
                 try:
                     df = pd.read_excel(file, engine="openpyxl")
                 except Exception:
-                    # If direct reading fails, try reading as BytesIO
+                    # Fallback: tenta ler como BytesIO se leitura direta falhar
                     import io
 
                     file.seek(0)
@@ -137,11 +156,10 @@ class DataImportService:
                     df = pd.read_excel(io.BytesIO(file_content), engine="openpyxl")
 
             elif file_name.endswith(".xls"):
-                # For .xls files, use xlrd engine
                 try:
                     df = pd.read_excel(file, engine="xlrd")
                 except Exception:
-                    # If xlrd is not available, try openpyxl
+                    # Fallback: tenta openpyxl se xlrd não estiver disponível
                     import io
 
                     file.seek(0)
@@ -151,7 +169,6 @@ class DataImportService:
             else:
                 raise ValueError("Formato de arquivo não suportado: {file_name}")
 
-            # Verify DataFrame is not empty
             if df.empty:
                 raise ValueError("O arquivo está vazio ou não contém dados válidos")
 
@@ -168,20 +185,16 @@ class DataImportService:
     @staticmethod
     def dataframe_to_dict_list(df: pd.DataFrame) -> List[Dict]:
         """
-        Convert pandas DataFrame to list of dictionaries
-        Handles NaN values and data type conversions
+        Converte pandas DataFrame para lista de dicionários.
+        Trata valores NaN e conversões de tipo de dados para serialização JSON.
         """
-        # Replace NaN with None
         df = df.where(pd.notna(df), None)
-
-        # Convert to list of dictionaries
         data = df.to_dict("records")
 
-        # Convert pandas Timestamp objects to strings for JSON serialization
+        # Converte objetos Timestamp do pandas para strings ISO para serialização JSON
         for record in data:
             for key, value in record.items():
                 if isinstance(value, (pd.Timestamp, datetime)):
-                    # Convert to ISO format string
                     record[key] = value.isoformat() if value else None
                 elif pd.isna(value):
                     record[key] = None
@@ -191,22 +204,21 @@ class DataImportService:
     @staticmethod
     def process_file_data(file: UploadedFile) -> Tuple[List[Dict], Dict]:
         """
-        Process uploaded file and return data in the same format as endpoint data
-        Returns: (data, column_structure)
+        Processa arquivo enviado e retorna dados no mesmo formato de dados de endpoint.
+
+        Returns:
+            Tupla (data, column_structure)
         """
-        # Resource limits to prevent abuse
-        MAX_ROWS = 100000  # Maximum 100k rows
-        MAX_COLUMNS = 100  # Maximum 100 columns
+        # Limites de recursos para prevenir abuso
+        MAX_ROWS = 100000
+        MAX_COLUMNS = 100
 
         try:
-            # Read file into DataFrame
             df = DataImportService.read_file_to_dataframe(file)
 
-            # Check if DataFrame is empty
             if df.empty:
                 raise ValueError("O arquivo está vazio ou não contém dados válidos")
 
-            # Validate resource limits
             row_count, col_count = df.shape
 
             if row_count > MAX_ROWS:
@@ -222,15 +234,11 @@ class DataImportService:
                     "Máximo permitido: {MAX_COLUMNS} colunas."
                 )
 
-            # Log dataset size for monitoring
             logger.info(
                 "Processing file with {row_count:,} rows and {col_count} columns"
             )
 
-            # Convert DataFrame to list of dictionaries
             data = DataImportService.dataframe_to_dict_list(df)
-
-            # Analyze column structure (same as endpoint)
             column_structure = DataImportService.analyze_column_structure(data)
 
             return data, column_structure
@@ -241,8 +249,10 @@ class DataImportService:
     @staticmethod
     def process_file_data_from_path(file_path: str) -> Tuple[List[Dict], Dict]:
         """
-        Process file from filesystem path (for use with Celery tasks)
-        Returns: (data, column_structure)
+        Processa arquivo do caminho do sistema de arquivos (para uso com tarefas Celery).
+
+        Returns:
+            Tupla (data, column_structure)
         """
         try:
             import os
@@ -250,25 +260,48 @@ class DataImportService:
             if not os.path.exists(file_path):
                 raise FileNotFoundError("Arquivo não encontrado: {file_path}")
 
-            # Determine file extension
             file_extension = os.path.splitext(file_path)[1].lower()
 
-            # Read file based on extension
             if file_extension in [".xlsx", ".xls"]:
                 df = pd.read_excel(file_path)
             elif file_extension == ".csv":
-                df = pd.read_csv(file_path, encoding="utf-8")
+                import csv
+
+                encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
+                detected_encoding = None
+                detected_delimiter = None
+
+                for encoding in encodings:
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as f:
+                            sample = f.read(8192)
+
+                        try:
+                            sniffer = csv.Sniffer()
+                            detected_delimiter = sniffer.sniff(sample).delimiter
+                        except:
+                            # Fallback: se Sniffer falhar, tenta delimitadores comuns
+                            delimiters = [',', ';', '\t', '|']
+                            line = sample.split('\n')[0]
+                            delimiter_counts = {d: line.count(d) for d in delimiters}
+                            detected_delimiter = max(delimiter_counts, key=delimiter_counts.get)
+
+                        detected_encoding = encoding
+                        break
+                    except (UnicodeDecodeError, FileNotFoundError):
+                        continue
+
+                encoding_to_use = detected_encoding or "utf-8"
+                delimiter_to_use = detected_delimiter or ","
+
+                df = pd.read_csv(file_path, encoding=encoding_to_use, delimiter=delimiter_to_use)
             else:
                 raise ValueError("Formato de arquivo não suportado: {file_extension}")
 
-            # Check if DataFrame is empty
             if df.empty:
                 raise ValueError("O arquivo está vazio ou não contém dados válidos")
 
-            # Convert DataFrame to list of dictionaries
             data = DataImportService.dataframe_to_dict_list(df)
-
-            # Analyze column structure
             column_structure = DataImportService.analyze_column_structure(data)
 
             return data, column_structure
@@ -279,11 +312,13 @@ class DataImportService:
     @staticmethod
     def fetch_data_from_endpoint(url: str) -> Tuple[List[Dict], Dict]:
         """
-        Fetch data from external endpoint
-        Returns: (data, column_structure)
+        Busca dados de endpoint externo com retry automático.
+
+        Returns:
+            Tupla (data, column_structure)
         """
         try:
-            # Add proper headers to avoid connection issues
+            # Headers para evitar problemas de conexão e simular navegador
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Accept": "application/json, text/plain, */*",
@@ -292,7 +327,6 @@ class DataImportService:
                 "Connection": "keep-alive",
             }
 
-            # Try to fetch data with retry logic
             max_retries = 3
             retry_count = 0
             last_error = None
@@ -303,16 +337,16 @@ class DataImportService:
                         url,
                         headers=headers,
                         timeout=30,
-                        verify=True,  # SSL verification enabled
+                        verify=True,
                     )
                     response.raise_for_status()
                     data = response.json()
-                    break  # Success, exit retry loop
+                    break
 
                 except (requests.exceptions.ConnectionError, ConnectionResetError) as e:
                     retry_count += 1
                     if retry_count < max_retries:
-                        time.sleep(2)  # Wait 2 seconds before retry
+                        time.sleep(2)
                         continue
                     else:
                         raise Exception(
@@ -320,7 +354,7 @@ class DataImportService:
                         )
 
                 except requests.exceptions.SSLError as e:
-                    # If SSL fails, try without verification
+                    # Fallback: se SSL falhar, tenta sem verificação (menos seguro)
                     logger.warning(
                         "SSL verification failed, trying without verification: {e}"
                     )
@@ -328,7 +362,7 @@ class DataImportService:
                         url,
                         headers=headers,
                         timeout=30,
-                        verify=False,  # Disable SSL verification
+                        verify=False,
                     )
                     response.raise_for_status()
                     data = response.json()
@@ -347,9 +381,9 @@ class DataImportService:
             if not data:
                 raise ValueError("Endpoint returned empty list")
 
-            # Resource limits to prevent abuse
-            MAX_ROWS = 100000  # Maximum 100k rows
-            MAX_COLUMNS = 100  # Maximum 100 columns
+            # Limites de recursos para prevenir abuso
+            MAX_ROWS = 100000
+            MAX_COLUMNS = 100
 
             row_count = len(data)
             if row_count > MAX_ROWS:
@@ -359,7 +393,6 @@ class DataImportService:
                     "Por favor, use paginação ou filtre os dados no endpoint."
                 )
 
-            # Check column count from first record
             if data and isinstance(data[0], dict):
                 col_count = len(data[0].keys())
                 if col_count > MAX_COLUMNS:
@@ -392,7 +425,7 @@ class DataImportService:
     @staticmethod
     def analyze_column_structure(data: List[Dict]) -> Dict[str, str]:
         """
-        Analyze data structure and determine column types
+        Analisa estrutura de dados e determina tipos de colunas.
         """
         if not data:
             return {}
@@ -419,11 +452,11 @@ class DataImportService:
     @staticmethod
     def create_table(table_name: str, column_structure: Dict[str, Dict]) -> None:
         """
-        DEPRECATED: No longer creates dynamic tables.
-        Column structure is now stored in DataImportProcess model.
+        DEPRECATED: Não cria mais tabelas dinâmicas.
+        A estrutura de colunas agora é armazenada no modelo DataImportProcess.
         """
-        # This method is kept for backward compatibility but does nothing
-        # Data is now stored in ImportedDataRecord model using JSONField
+        # Mantido para compatibilidade retroativa, mas não faz nada
+        # Dados agora são armazenados no modelo ImportedDataRecord usando JSONField
         logger.info(
             "Skipping dynamic table creation for {table_name} - using ORM model instead"
         )
@@ -500,7 +533,6 @@ class DataImportService:
                 errors += 1
                 empty_normalized_data_count += 1
                 if empty_normalized_data_count == 1:
-                    # Log first occurrence with details
                     logger.error(
                         "[DEBUG] Record {idx} resulted in empty normalized_data!"
                     )
@@ -511,23 +543,20 @@ class DataImportService:
                 continue
 
             try:
-                # Generate hash for duplicate detection
                 row_hash = ImportedDataRecord.generate_row_hash(normalized_data)
 
-                # Check if duplicate
                 if row_hash in existing_hashes:
                     duplicates_skipped += 1
                     logger.debug("Duplicate record skipped (hash: {row_hash})")
                     continue
 
-                # Prepare record for bulk insert
                 records_to_create.append(
                     ImportedDataRecord(
                         process=process, row_hash=row_hash, data=normalized_data
                     )
                 )
 
-                # Add to existing hashes to detect duplicates within the same batch
+                # Adiciona ao set de hashes para detectar duplicatas dentro do mesmo lote
                 existing_hashes.add(row_hash)
 
             except Exception as e:
@@ -536,7 +565,7 @@ class DataImportService:
                 logger.error("Data: {normalized_data}")
                 continue
 
-        # Bulk insert all records at once (1000 per batch)
+        # Insere registros em lotes de 1000 para melhor performance
         records_inserted = 0
         logger.info("[DEBUG] Prepared {len(records_to_create)} records for insertion")
         logger.info(
@@ -549,7 +578,7 @@ class DataImportService:
                 for i in range(0, len(records_to_create), BATCH_SIZE):
                     batch = records_to_create[i : i + BATCH_SIZE]
                     ImportedDataRecord.objects.bulk_create(
-                        batch, ignore_conflicts=True  # Ignore any duplicate key errors
+                        batch, ignore_conflicts=True
                     )
                     records_inserted += len(batch)
                     logger.info(
@@ -593,11 +622,10 @@ class DataImportService:
         process=None,
     ) -> Dict[str, int]:
         """
-        BACKWARD COMPATIBILITY WRAPPER
-        Now uses ORM instead of direct SQL
+        Wrapper de compatibilidade retroativa.
+        Agora usa ORM ao invés de SQL direto.
         """
         if process is None:
-            # Try to find process by table_name
             try:
                 process = DataImportProcess.objects.get(table_name=table_name)
             except DataImportProcess.DoesNotExist:
@@ -621,17 +649,16 @@ class DataImportService:
         import_type: str = "endpoint",
     ) -> DataImportProcess:
         """
-        Main method to import data from an endpoint or file with transaction safety.
-        If any step fails, all database changes are rolled back.
+        Método principal para importar dados de endpoint ou arquivo com segurança transacional.
+        Se qualquer etapa falhar, todas as alterações no banco são revertidas.
 
         Args:
-            table_name: Name of the table to create
-            user: User who initiated the import
-            endpoint_url: URL of external endpoint (for endpoint import)
-            file: Uploaded file (for file import)
-            import_type: Type of import ('endpoint' or 'file')
+            table_name: Nome da tabela a criar
+            user: Usuário que iniciou a importação
+            endpoint_url: URL do endpoint externo (para importação via endpoint)
+            file: Arquivo enviado (para importação via arquivo)
+            import_type: Tipo de importação ('endpoint' ou 'file')
         """
-        # Create process record
         process = DataImportProcess.objects.create(
             endpoint_url=endpoint_url or f'file:{file.name if file else "unknown"}',
             table_name=table_name,
@@ -640,7 +667,6 @@ class DataImportService:
         )
 
         try:
-            # Fetch data based on import type
             if import_type == "endpoint":
                 if not endpoint_url:
                     raise ValueError(
@@ -658,20 +684,17 @@ class DataImportService:
             else:
                 raise ValueError("Tipo de importação inválido: {import_type}")
 
-            # Insert data using ORM (no table creation needed)
             logger.info(
                 "Importing data for {table_name} with {len(column_structure)} columns"
             )
             logger.info("Data contains {len(data)} records")
 
-            # Use ORM-based insertion
             insert_stats = DataImportService.insert_data_orm(
                 process, data, column_structure
             )
 
             logger.info("Insert stats: {insert_stats}")
 
-            # Update process - keep as active
             process.status = "active"
             process.record_count = insert_stats["inserted"]
             process.column_structure = column_structure
@@ -679,7 +702,6 @@ class DataImportService:
 
             logger.info("Process updated with record_count={insert_stats['inserted']}")
 
-            # Store stats in process for later reference
             if insert_stats["duplicates"] > 0 or insert_stats["errors"] > 0:
                 logger.info(
                     "Import completed: {insert_stats['inserted']} inserted, {insert_stats['duplicates']} duplicates skipped, {insert_stats['errors']} errors"

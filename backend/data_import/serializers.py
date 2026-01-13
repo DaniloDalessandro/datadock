@@ -7,8 +7,8 @@ from .models import DataImportProcess
 
 class DataImportRequestSerializer(serializers.Serializer):
     """
-    Serializer for data import request
-    Supports both endpoint URL and file upload
+    Serializer para requisição de importação de dados
+    Suporta tanto URL de endpoint quanto upload de arquivo
     """
 
     IMPORT_TYPE_CHOICES = [
@@ -37,7 +37,7 @@ class DataImportRequestSerializer(serializers.Serializer):
 
     def validate(self, data):
         """
-        Validate that either endpoint_url or file is provided based on import_type
+        Valida que endpoint_url ou file foi fornecido de acordo com import_type
         """
         import_type = data.get("import_type")
         endpoint_url = data.get("endpoint_url")
@@ -56,17 +56,15 @@ class DataImportRequestSerializer(serializers.Serializer):
                     {"file": 'Arquivo é obrigatório quando o tipo é "file"'}
                 )
 
-            # Robust file validation
             self._validate_file_upload(file)
 
         return data
 
     def _validate_file_upload(self, file):
         """
-        Comprehensive file upload validation
+        Validação abrangente de upload de arquivo
         """
-        # 1. File size validation (max 50MB)
-        MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+        MAX_FILE_SIZE = 50 * 1024 * 1024
         if file.size > MAX_FILE_SIZE:
             raise serializers.ValidationError(
                 {
@@ -74,12 +72,11 @@ class DataImportRequestSerializer(serializers.Serializer):
                 }
             )
 
-        # 2. Filename sanitization - prevent path traversal
+        # Previne path traversal
         filename = os.path.basename(file.name)
         if ".." in filename or "/" in filename or "\\" in filename:
             raise serializers.ValidationError({"file": "Nome de arquivo inválido"})
 
-        # 3. Extension validation
         allowed_extensions = [".xlsx", ".xls", ".csv"]
         file_name_lower = filename.lower()
         if not any(file_name_lower.endswith(ext) for ext in allowed_extensions):
@@ -89,24 +86,20 @@ class DataImportRequestSerializer(serializers.Serializer):
                 }
             )
 
-        # 4. Basic file header validation (magic bytes)
+        # Validação de magic bytes do arquivo
         file.seek(0)
         file_header = file.read(8)
         file.seek(0)
 
-        # Check for common file signatures
         is_valid = False
         if file_name_lower.endswith(".xlsx"):
-            # XLSX files start with PK (ZIP signature)
             is_valid = file_header[:2] == b"PK"
         elif file_name_lower.endswith(".xls"):
-            # XLS files start with specific signature
             is_valid = file_header[:8] in [
                 b"\xd0\xcf\x11\xa0\xa1\xb1\x1a\xe1",
                 b"\x09\x08\x10\x00\x00\x06\x05\x00",
             ]
         elif file_name_lower.endswith(".csv"):
-            # CSV is plain text, just check if readable
             is_valid = True
 
         if not is_valid and not file_name_lower.endswith(".csv"):
@@ -114,17 +107,14 @@ class DataImportRequestSerializer(serializers.Serializer):
                 {"file": "Arquivo não corresponde ao formato declarado na extensão"}
             )
 
-        # 5. Additional content validation for CSV
         if file_name_lower.endswith(".csv"):
             file.seek(0)
             try:
-                # Try to read first line as CSV to validate format
                 import csv
 
                 first_chunk = file.read(8192).decode("utf-8", errors="ignore")
                 file.seek(0)
 
-                # Check if it looks like CSV
                 sniffer = csv.Sniffer()
                 try:
                     sniffer.sniff(first_chunk)
@@ -137,26 +127,22 @@ class DataImportRequestSerializer(serializers.Serializer):
                     {"file": "Não foi possível validar o arquivo CSV"}
                 )
 
-        # 6. Reset file pointer after all validations
         file.seek(0)
 
     def validate_table_name(self, value):
         """
-        Validate table name to prevent SQL injection and duplicates
+        Valida nome da tabela para prevenir SQL injection e duplicatas
         """
-        # Remove caracteres especiais e espacos
         cleaned = "".join(c for c in value if c.isalnum() or c == "_")
         if not cleaned:
             raise serializers.ValidationError(
                 "Nome da tabela deve conter apenas letras, numeros e underscore"
             )
-        # Nao pode comecar com numero
         if cleaned[0].isdigit():
             raise serializers.ValidationError(
                 "Nome da tabela nao pode comecar com numero"
             )
 
-        # Verificar se ja existe um dataset com esse nome
         cleaned_lower = cleaned.lower()
         if DataImportProcess.objects.filter(table_name=cleaned_lower).exists():
             raise serializers.ValidationError(
@@ -168,7 +154,7 @@ class DataImportRequestSerializer(serializers.Serializer):
 
 class DataImportProcessSerializer(serializers.ModelSerializer):
     """
-    Serializer for DataImportProcess model
+    Serializer para o model DataImportProcess
     """
 
     created_by_name = serializers.SerializerMethodField()
@@ -194,7 +180,7 @@ class DataImportProcessSerializer(serializers.ModelSerializer):
 
     def get_created_by_name(self, obj):
         """
-        Get the name of the user who created this import
+        Obtém o nome do usuário que criou esta importação
         """
         if obj.created_by:
             return obj.created_by.get_full_name() or obj.created_by.email

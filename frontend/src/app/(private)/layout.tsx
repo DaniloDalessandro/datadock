@@ -1,6 +1,6 @@
 "use client"
 
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/layout/sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 import React, { memo, useMemo } from "react"
-import AuthGuard from "@/components/AuthGuard"
+import { AuthGuard } from "@/components/auth"
 
 const capitalize = (s: string) => {
   if (typeof s !== "string" || s.length === 0) {
@@ -30,7 +30,6 @@ const capitalize = (s: string) => {
   )
 }
 
-// Memoize o componente de breadcrumb para evitar re-renderizações
 const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => {
   return (
     <Breadcrumb>
@@ -70,8 +69,7 @@ export default function Layout({
   children: React.ReactNode
 }>) {
   const pathname = usePathname()
-  
-  // Memoize o cálculo dos segmentos do path
+
   const pathSegments = useMemo(() => 
     pathname.split("/").filter((segment) => segment),
     [pathname]

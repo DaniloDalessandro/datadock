@@ -1,6 +1,6 @@
 /**
- * Authentication utility functions
- * Manages token storage, validation, refresh, and logout operations
+ * Funções utilitárias de autenticação
+ * Gerencia armazenamento, validação, renovação e logout de tokens
  */
 
 import { config } from "./config"
@@ -21,25 +21,16 @@ export interface AuthTokens {
   refresh: string
 }
 
-/**
- * Get the access token from localStorage
- */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null
   return localStorage.getItem("access_token")
 }
 
-/**
- * Get the refresh token from localStorage
- */
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null
   return localStorage.getItem("refresh_token")
 }
 
-/**
- * Get user data from localStorage
- */
 export function getUserData(): UserData | null {
   if (typeof window === "undefined") return null
   const userData = localStorage.getItem("user_data")
@@ -51,16 +42,10 @@ export function getUserData(): UserData | null {
   }
 }
 
-/**
- * Check if user is authenticated
- */
 export function isAuthenticated(): boolean {
   return !!getAccessToken()
 }
 
-/**
- * Store authentication tokens
- */
 export function setAuthTokens(tokens: Partial<AuthTokens>): void {
   if (tokens.access) {
     localStorage.setItem("access_token", tokens.access)
@@ -70,25 +55,16 @@ export function setAuthTokens(tokens: Partial<AuthTokens>): void {
   }
 }
 
-/**
- * Store user data
- */
 export function setUserData(userData: UserData): void {
   localStorage.setItem("user_data", JSON.stringify(userData))
 }
 
-/**
- * Clear all authentication data
- */
 export function clearAuthData(): void {
   localStorage.removeItem("access_token")
   localStorage.removeItem("refresh_token")
   localStorage.removeItem("user_data")
 }
 
-/**
- * Logout user and redirect to login page
- */
 export function logout(): void {
   clearAuthData()
   if (typeof window !== "undefined") {
@@ -97,8 +73,8 @@ export function logout(): void {
 }
 
 /**
- * Refresh the access token using the refresh token
- * @returns New access token or null if refresh failed
+ * Renova o access token usando o refresh token
+ * @returns Novo access token ou null se a renovação falhar
  */
 export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken()
@@ -120,11 +96,9 @@ export async function refreshAccessToken(): Promise<string | null> {
     })
 
     if (!response.ok) {
-      // Refresh token is invalid or expired
+      // Refresh token inválido ou expirado - limpa tokens e força novo login
       const errorData = await response.json().catch(() => ({}))
       console.error("[Auth] Token refresh failed:", response.status, errorData)
-
-      // Clear invalid tokens
       clearAuthData()
       return null
     }
@@ -146,10 +120,10 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 /**
- * Make an authenticated API request with automatic token refresh
- * @param url - API endpoint URL
- * @param options - Fetch options
- * @returns Response object
+ * Faz requisição autenticada com renovação automática de token em caso de 401
+ * @param url - URL do endpoint da API
+ * @param options - Opções do fetch
+ * @returns Objeto Response
  */
 export async function authenticatedFetch(
   url: string,
@@ -161,28 +135,24 @@ export async function authenticatedFetch(
     throw new Error("No access token available")
   }
 
-  // Adiciona header de autorização
   const headers = {
     ...options.headers,
     Authorization: `Bearer ${accessToken}`,
   }
 
-  // First attempt
   let response = await fetch(url, { ...options, headers })
 
-  // If unauthorized, try to refresh token and retry
+  // Retry automático com refresh de token se receber 401
   if (response.status === 401) {
     const newToken = await refreshAccessToken()
 
     if (newToken) {
-      // Retry with new token
       const refreshedHeaders = {
         ...options.headers,
         Authorization: `Bearer ${newToken}`,
       }
       response = await fetch(url, { ...options, headers: refreshedHeaders })
     } else {
-      // Refresh failed, logout user
       logout()
       throw new Error("Session expired. Please login again.")
     }
@@ -192,9 +162,9 @@ export async function authenticatedFetch(
 }
 
 /**
- * Decode JWT token to get expiration time
+ * Decodifica JWT token para obter timestamp de expiração
  * @param token - JWT token
- * @returns Expiration timestamp or null
+ * @returns Timestamp de expiração ou null
  */
 export function getTokenExpiration(token: string): number | null {
   try {
@@ -214,10 +184,10 @@ export function getTokenExpiration(token: string): number | null {
 }
 
 /**
- * Check if token is expired or will expire soon
+ * Verifica se o token está expirado ou prestes a expirar
  * @param token - JWT token
- * @param bufferMinutes - Minutes before expiration to consider token as expired (default: 5)
- * @returns True if token is expired or will expire soon
+ * @param bufferMinutes - Minutos antes da expiração para considerar token como expirado (padrão: 5)
+ * @returns True se o token está expirado ou vai expirar em breve
  */
 export function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
   const expiration = getTokenExpiration(token)
@@ -229,8 +199,8 @@ export function isTokenExpired(token: string, bufferMinutes: number = 5): boolea
 }
 
 /**
- * Check if access token needs refresh
- * @returns True if token should be refreshed
+ * Verifica se o access token precisa ser renovado
+ * @returns True se o token deve ser renovado
  */
 export function shouldRefreshToken(): boolean {
   const accessToken = getAccessToken()

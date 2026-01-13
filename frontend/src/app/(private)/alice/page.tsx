@@ -46,14 +46,14 @@ export default function AlicePage() {
     }
   }, [messages, isTyping])
 
-  // Redirect to login if not authenticated
+  // Redireciona para login se não estiver autenticado
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login')
     }
   }, [isLoading, isAuthenticated, router])
 
-  // Rate limit cooldown timer
+  // Timer de cooldown para rate limit
   useEffect(() => {
     if (rateLimitCooldown > 0) {
       const timer = setTimeout(() => {
@@ -65,7 +65,6 @@ export default function AlicePage() {
 
   const callAliceAPI = async (message: string): Promise<string> => {
     try {
-      // Refresh token if needed
       const tokenRefreshed = await refreshToken()
       if (!tokenRefreshed) {
         router.push('/login')
@@ -91,15 +90,13 @@ export default function AlicePage() {
 
       const data = await response.json()
 
-      // Handle 401 - Unauthorized
       if (response.status === 401) {
         router.push('/login')
         throw new Error('Sessão expirada. Redirecionando para login...')
       }
 
-      // Handle 429 - Rate Limit
       if (response.status === 429) {
-        setRateLimitCooldown(60) // 60 seconds cooldown
+        setRateLimitCooldown(60)
         throw new Error('Muitas requisições. Aguarde 60 segundos antes de tentar novamente.')
       }
 
@@ -133,7 +130,6 @@ export default function AlicePage() {
     setInput("")
     setIsTyping(true)
 
-    // Call Alice API
     try {
       const response = await callAliceAPI(messageText)
       const assistantMessage: Message = {
@@ -170,7 +166,6 @@ export default function AlicePage() {
     "Me dê recomendações"
   ]
 
-  // Show loading while checking authentication
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-6rem)] p-8">
@@ -186,7 +181,6 @@ export default function AlicePage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] gap-6 p-8">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
           <Bot className="h-6 w-6 text-white" />
@@ -200,10 +194,8 @@ export default function AlicePage() {
         </div>
       </div>
 
-      {/* Chat Container */}
       <Card className="flex-1 flex flex-col border-2 shadow-lg">
         <CardContent className="flex-1 flex flex-col p-0">
-          {/* Messages */}
           <ScrollArea className="flex-1 p-6" ref={scrollRef}>
             <div className="space-y-6">
               {messages.map((message) => (
@@ -274,7 +266,6 @@ export default function AlicePage() {
             </div>
           </ScrollArea>
 
-          {/* Quick Questions */}
           {messages.length === 1 && (
             <div className="px-6 pb-4">
               <p className="text-xs text-gray-500 mb-2">Perguntas sugeridas:</p>
@@ -296,7 +287,6 @@ export default function AlicePage() {
             </div>
           )}
 
-          {/* Input Area */}
           <div className="border-t p-4 bg-gray-50">
             {rateLimitCooldown > 0 && (
               <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">

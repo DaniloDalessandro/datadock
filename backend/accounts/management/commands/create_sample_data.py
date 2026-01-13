@@ -1,6 +1,4 @@
-"""
-Management command to create sample data for testing.
-"""
+"""Command de gerenciamento para criar dados de exemplo para testes."""
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -29,7 +27,6 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                # Create companies
                 self.stdout.write("\n1. Creating companies...")
                 company1, created = Company.objects.get_or_create(
                     cnpj="12.345.678/0001-90",
@@ -55,7 +52,6 @@ class Command(BaseCommand):
                 action = "Created" if created else "Found existing"
                 self.stdout.write(f"   [OK] {action}: {company2.name}")
 
-                # Create admin user (internal)
                 self.stdout.write("\n2. Creating admin user...")
                 admin, created = CustomUser.objects.get_or_create(
                     username="demo_admin",
@@ -84,7 +80,6 @@ class Command(BaseCommand):
                     f"   [OK] {action}: {admin.username} (password: admin123)"
                 )
 
-                # Create internal users
                 self.stdout.write("\n3. Creating internal users...")
 
                 internal1 = CustomUser.objects.create_user(
@@ -129,7 +124,6 @@ class Command(BaseCommand):
                     f"   [OK] Created: {internal2.username} (password: maria123)"
                 )
 
-                # Create external users
                 self.stdout.write("\n4. Creating external users...")
 
                 external1 = CustomUser.objects.create_user(
@@ -199,7 +193,6 @@ class Command(BaseCommand):
                     f"   [OK] Created: {external3.username} (password: cliente123)"
                 )
 
-                # Summary
                 self.stdout.write("\n" + "=" * 60)
                 self.stdout.write(
                     self.style.SUCCESS("Sample data created successfully!")

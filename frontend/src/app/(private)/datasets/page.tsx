@@ -9,10 +9,9 @@ import { Badge } from "@/components/ui/badge"
 import { useDatasets } from "@/hooks/useDatasets"
 import { useToast } from "@/hooks/use-toast"
 
-// Carrega componente de diálogo sob demanda
 const DatasetDialog = lazy(() => import("@/components/datasets/DatasetDialog"))
 
-const BLANK_TARGET = "_blank"; // Define como constante
+const BLANK_TARGET = "_blank"
 
 const openDatasetInNewTab = (datasetId: number) => {
   window.open(`/datasets/${datasetId}`, BLANK_TARGET);
@@ -24,7 +23,6 @@ export default function DatasetsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Filtra datasets pelo nome
   const filteredDatasets = datasets.filter((dataset) =>
     dataset.table_name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -75,7 +73,6 @@ export default function DatasetsPage() {
   return (
     <div className="flex flex-col h-full p-6">
       <div className="flex flex-col gap-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Gestão de Dados</h1>
@@ -83,7 +80,6 @@ export default function DatasetsPage() {
           </div>
         </div>
 
-        {/* Search and Add Button */}
         <div className="flex gap-4 items-center">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -101,14 +97,12 @@ export default function DatasetsPage() {
           </Button>
         </div>
 
-        {/* Results Count */}
         {searchTerm && (
           <div className="text-sm text-gray-600">
             {filteredDatasets.length} resultado(s) encontrado(s) para &ldquo;{searchTerm}&rdquo;
           </div>
         )}
 
-        {/* Cards Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -158,7 +152,6 @@ export default function DatasetsPage() {
           </div>
         )}
 
-        {/* Empty State */}
         {filteredDatasets.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Database className="h-12 w-12 text-gray-400 mb-4" />
@@ -180,7 +173,6 @@ export default function DatasetsPage() {
         )}
       </div>
 
-      {/* Modal de Adicionar Dataset - Lazy Loaded */}
       {isDialogOpen && (
         <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-white" /></div>}>
           <DatasetDialog

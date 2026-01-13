@@ -1,4 +1,4 @@
-import { ModernLoginForm } from "@/components/modern-login-form"
+import { LoginForm as ModernLoginForm } from "@/components/auth"
 import { DataFlowAnimation } from "@/components/data-flow-animation"
 
 export default function LoginPage() {

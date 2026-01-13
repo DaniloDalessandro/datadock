@@ -1,6 +1,4 @@
-"""
-Management command to create users with profiles easily.
-"""
+"""Command de gerenciamento para criar usuários com perfis facilmente."""
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -31,7 +29,6 @@ class Command(BaseCommand):
             "--superuser", action="store_true", help="Make user superuser"
         )
 
-        # Internal profile options
         parser.add_argument(
             "--department", type=str, help="Department (for internal users)"
         )
@@ -42,7 +39,6 @@ class Command(BaseCommand):
             "--employee-id", type=str, help="Employee ID (for internal users)"
         )
 
-        # External profile options
         parser.add_argument(
             "--company-name", type=str, help="Company name (for external users)"
         )
@@ -65,7 +61,6 @@ class Command(BaseCommand):
         last_name = options.get("last_name", "")
         profile_type = options["profile_type"]
 
-        # Validate external profile requirements
         if profile_type == "externo":
             if not options.get("company_name"):
                 raise CommandError("--company-name is required for external users")
@@ -74,7 +69,6 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                # Create user
                 if options["superuser"]:
                     user = CustomUser.objects.create_superuser(
                         username=username,
@@ -102,7 +96,6 @@ class Command(BaseCommand):
                 self.stdout.write(f"  Profile Type: {user.get_profile_type_display()}")
                 self.stdout.write(f"  Password: {password}")
 
-                # Create profile based on type
                 if profile_type == "interno":
                     profile, created = InternalProfile.objects.get_or_create(user=user)
                     if options.get("department"):

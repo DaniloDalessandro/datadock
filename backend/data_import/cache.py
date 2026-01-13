@@ -1,5 +1,5 @@
 """
-Cache utilities for data_import app
+Utilitários de cache para o módulo data_import
 """
 
 import hashlib
@@ -11,9 +11,8 @@ from django.core.cache import cache
 
 def make_cache_key(prefix, **kwargs):
     """
-    Generate a consistent cache key from prefix and parameters
+    Gera uma chave de cache consistente a partir de prefixo e parâmetros
     """
-    # Sort kwargs to ensure consistent key generation
     params = json.dumps(kwargs, sort_keys=True)
     params_hash = hashlib.md5(params.encode()).hexdigest()
     return f"{prefix}:{params_hash}"
@@ -21,8 +20,9 @@ def make_cache_key(prefix, **kwargs):
 
 def cache_view_result(timeout=300, key_prefix="view"):
     """
-    Decorator to cache view results
-    Usage:
+    Decorator para fazer cache de resultados de views
+
+    Uso:
         @cache_view_result(timeout=600, key_prefix='process_list')
         def get(self, request):
             ...
@@ -31,7 +31,6 @@ def cache_view_result(timeout=300, key_prefix="view"):
     def decorator(func):
         @wraps(func)
         def wrapper(self, request, *args, **kwargs):
-            # Build cache key from request parameters
             cache_params = {
                 "path": request.path,
                 "query": dict(request.GET),
@@ -39,12 +38,10 @@ def cache_view_result(timeout=300, key_prefix="view"):
             }
             cache_key = make_cache_key(key_prefix, **cache_params)
 
-            # Try to get from cache
             cached_result = cache.get(cache_key)
             if cached_result is not None:
                 return cached_result
 
-            # Execute view and cache result
             result = func(self, request, *args, **kwargs)
             cache.set(cache_key, result, timeout)
 
@@ -57,19 +54,18 @@ def cache_view_result(timeout=300, key_prefix="view"):
 
 def invalidate_cache_pattern(pattern):
     """
-    Invalidate all cache keys matching a pattern
+    Invalida todas as chaves de cache que correspondem a um padrão
     """
     try:
-        # For django-redis backend
         cache.delete_pattern(f"{pattern}*")
     except AttributeError:
-        # For local memory cache, clear all
+        # Fallback: para cache em memória local, limpa tudo
         cache.clear()
 
 
 def invalidate_process_caches(process_id=None):
     """
-    Invalidate caches related to data import processes
+    Invalida caches relacionados aos processos de importação de dados
     """
     patterns = [
         "view:process_list",
@@ -81,7 +77,6 @@ def invalidate_process_caches(process_id=None):
     for pattern in patterns:
         invalidate_cache_pattern(pattern)
 
-    # Also invalidate specific process cache if provided
     if process_id:
         cache.delete(f"process:{process_id}")
         cache.delete(f"process_data:{process_id}")

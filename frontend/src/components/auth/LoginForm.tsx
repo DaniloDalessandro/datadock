@@ -21,14 +21,12 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {}
 
-    // Email validation
     if (!email) {
       newErrors.email = "Email é obrigatório"
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Por favor, insira um email válido"
     }
 
-    // Password validation
     if (!password) {
       newErrors.password = "Senha é obrigatória"
     }
@@ -59,7 +57,6 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
       const data = await response.json()
 
       if (!response.ok) {
-        // Gerencia diferentes cenários de erro
         if (response.status === 401) {
           setLoginError("Email ou senha incorretos. Por favor, tente novamente.")
         } else if (response.status === 403) {
@@ -73,7 +70,6 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
         return
       }
 
-      // Store authentication tokens
       if (data.access || data.token) {
         const accessToken = data.access || data.token
         localStorage.setItem("access_token", accessToken)
@@ -83,12 +79,10 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
         localStorage.setItem("refresh_token", data.refresh)
       }
 
-      // Store user data if available
       if (data.user) {
         localStorage.setItem("user_data", JSON.stringify(data.user))
       }
 
-      // Redirect to dashboard (private route)
       window.location.href = "/dashboard"
     } catch (error) {
       console.error("Login error:", error)
@@ -104,7 +98,6 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
   return (
     <div className={cn("w-full max-w-md", className)}>
       <div className="bg-card border rounded-xl shadow-2xl p-8 backdrop-blur-sm bg-white/95 dark:bg-card/95">
-        {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
             DataDock
@@ -114,9 +107,7 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
           </p>
         </div>
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
               Email
@@ -146,7 +137,6 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
             )}
           </div>
 
-          {/* Password Field */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="text-sm font-medium">
@@ -184,14 +174,12 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
             )}
           </div>
 
-          {/* Login Error */}
           {loginError && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 animate-in fade-in-50 duration-200">
               <p className="text-sm text-destructive text-center">{loginError}</p>
             </div>
           )}
 
-          {/* Submit Button */}
           <Button
             type="submit"
             className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -209,7 +197,6 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
         </form>
       </div>
 
-      {/* Terms */}
       <p className="mt-4 text-center text-xs text-muted-foreground">
         Ao entrar, você concorda com nossos{" "}
         <a href="#" className="underline hover:text-foreground transition-colors">
