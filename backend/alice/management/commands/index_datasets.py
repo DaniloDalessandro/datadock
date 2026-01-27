@@ -1,5 +1,5 @@
 """
-Comando de gerenciamento para indexar datasets no banco vetorial
+Comando de gerenciamento para indexar datasets no banco vetorial usando LangChain + pgvector
 """
 
 from django.core.management.base import BaseCommand
@@ -9,7 +9,7 @@ from data_import.models import DataImportProcess
 
 
 class Command(BaseCommand):
-    help = "Indexa datasets existentes no banco vetorial para busca semântica"
+    help = "Indexa datasets existentes no banco vetorial para busca semântica (LangChain + pgvector)"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -39,6 +39,14 @@ class Command(BaseCommand):
             )
             return
 
+        database_url = os.getenv("DATABASE_URL", "")
+        if "sqlite" in database_url or not database_url:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Aviso: pgvector requer PostgreSQL. Verifique DATABASE_URL."
+                )
+            )
+
         try:
             vector_service = VectorService()
 
@@ -57,7 +65,7 @@ class Command(BaseCommand):
             self._index_all_datasets(vector_service, force=options["all"])
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR("Erro: {str(e)}"))
+            self.stdout.write(self.style.ERROR(f"Erro: {str(e)}"))
             raise
 
     def _index_single_dataset(self, vector_service, dataset_id=None, table_name=None):
@@ -71,28 +79,28 @@ class Command(BaseCommand):
             if dataset.status != "completed":
                 self.stdout.write(
                     self.style.WARNING(
-                        "Dataset {dataset.table_name} não está completo (status: {dataset.status})"
+                        f"Dataset {dataset.table_name} não está completo (status: {dataset.status})"
                     )
                 )
                 return
 
-            self.stdout.write("Indexando dataset: {dataset.table_name}...")
+            self.stdout.write(f"Indexando dataset: {dataset.table_name}...")
 
             vector_service.index_dataset(dataset, force=True)
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    "✓ Dataset {dataset.table_name} indexado com sucesso!"
+                    f"✓ Dataset {dataset.table_name} indexado com sucesso!"
                 )
             )
 
         except DataImportProcess.DoesNotExist:
             identifier = dataset_id or table_name
-            self.stdout.write(self.style.ERROR("Dataset não encontrado: {identifier}"))
+            self.stdout.write(self.style.ERROR(f"Dataset não encontrado: {identifier}"))
 
     def _index_all_datasets(self, vector_service, force=False):
         """Indexa todos os datasets."""
-        self.stdout.write("Iniciando indexação de datasets...\n")
+        self.stdout.write("Iniciando indexação de datasets com LangChain + pgvector...\n")
 
         queryset = DataImportProcess.objects.filter(status="completed")
 
@@ -108,7 +116,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Nenhum dataset para indexar."))
             return
 
-        self.stdout.write("Total de datasets a indexar: {total}\n")
+        self.stdout.write(f"Total de datasets a indexar: {total}\n")
 
         stats = vector_service.bulk_index_datasets(
             dataset_ids=list(queryset.values_list("id", flat=True))
@@ -117,18 +125,18 @@ class Command(BaseCommand):
         self.stdout.write("\n" + "=" * 50)
         self.stdout.write(self.style.SUCCESS("INDEXAÇÃO CONCLUÍDA"))
         self.stdout.write("=" * 50)
-        self.stdout.write('Total processado: {stats["total"]}')
-        self.stdout.write(self.style.SUCCESS('✓ Sucesso: {stats["success"]}'))
+        self.stdout.write(f"Total processado: {stats['total']}")
+        self.stdout.write(self.style.SUCCESS(f"✓ Sucesso: {stats['success']}"))
 
         if stats["failed"] > 0:
-            self.stdout.write(self.style.ERROR('✗ Falhas: {stats["failed"]}'))
+            self.stdout.write(self.style.ERROR(f"✗ Falhas: {stats['failed']}"))
 
             if stats["errors"]:
                 self.stdout.write("\nErros encontrados:")
                 for error in stats["errors"][:10]:
                     self.stdout.write(
-                        self.style.ERROR('  - {error["table_name"]}: {error["error"]}')
+                        self.style.ERROR(f"  - {error['table_name']}: {error['error']}")
                     )
 
                 if len(stats["errors"]) > 10:
-                    self.stdout.write('  ... e mais {len(stats["errors"]) - 10} erros')
+                    self.stdout.write(f"  ... e mais {len(stats['errors']) - 10} erros")

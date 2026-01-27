@@ -1,5 +1,5 @@
 """
-Views da Assistente de IA Alice
+Views da Assistente de IA Alice usando LangChain
 """
 
 import json
@@ -8,9 +8,10 @@ import os
 import time
 from datetime import datetime
 
-import google.generativeai as genai
 from django.core.cache import cache
 from django.db.models import Count, Q
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, SystemMessage
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -31,7 +32,7 @@ class AliceRateThrottle(UserRateThrottle):
 
 class AliceChatView(APIView):
     """
-    Assistente de IA Alice alimentada por Google Gemini.
+    Assistente de IA Alice alimentada por LangChain + Google Gemini.
     POST /api/alice/chat/
 
     Request body:
@@ -42,6 +43,25 @@ class AliceChatView(APIView):
 
     permission_classes = [IsAuthenticated]
     throttle_classes = [AliceRateThrottle]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._llm = None
+
+    def _get_llm(self):
+        """Lazy initialization do LLM"""
+        if self._llm is None:
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key or api_key == "your-gemini-api-key-here":
+                raise ValueError("GEMINI_API_KEY não configurado")
+
+            self._llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash",
+                google_api_key=api_key,
+                temperature=0.7,
+                max_retries=3,
+            )
+        return self._llm
 
     def post(self, request):
         """
@@ -66,9 +86,6 @@ class AliceChatView(APIView):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-
             # Tenta usar RAG para melhor contexto, com fallback para contexto tradicional se necessário
             context = self._get_rag_context(user_message)
 
@@ -92,7 +109,7 @@ PERGUNTA DO USUÁRIO:
 
 Sua resposta:"""
 
-            response_text = self._get_gemini_response_with_retry(model, system_prompt)
+            response_text = self._get_llm_response_with_retry(system_prompt)
 
             return Response(
                 {
@@ -134,14 +151,17 @@ Sua resposta:"""
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _get_gemini_response_with_retry(self, model, prompt, max_retries=3):
+    def _get_llm_response_with_retry(self, prompt, max_retries=3):
         """
-        Obtém resposta do Gemini com retry usando backoff exponencial.
+        Obtém resposta do LLM com retry usando backoff exponencial.
         """
+        llm = self._get_llm()
+
         for attempt in range(max_retries):
             try:
-                response = model.generate_content(prompt)
-                return response.text
+                messages = [HumanMessage(content=prompt)]
+                response = llm.invoke(messages)
+                return response.content
             except Exception as e:
                 error_message = str(e)
 
@@ -151,7 +171,7 @@ Sua resposta:"""
                 ) and attempt < max_retries - 1:
                     wait_time = (2**attempt) * 3  # Backoff exponencial: 3, 6, 12 segundos
                     logger.warning(
-                        "Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}"
+                        f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}"
                     )
                     time.sleep(wait_time)
                     continue
@@ -161,7 +181,7 @@ Sua resposta:"""
 
     def _get_rag_context(self, user_message):
         """
-        Obtém contexto de datasets usando RAG (Retrieval Augmented Generation).
+        Obtém contexto de datasets usando RAG (Retrieval Augmented Generation) com LangChain.
         Faz fallback para contexto tradicional se RAG não estiver disponível.
         """
         try:
@@ -173,20 +193,22 @@ Sua resposta:"""
 
             if similar_datasets:
                 context = {
-                    "tipo_busca": "RAG - Busca Semântica (Top 5 mais relevantes)",
+                    "tipo_busca": "RAG - Busca Semântica com LangChain + pgvector (Top 5 mais relevantes)",
                     "datasets_relevantes": [],
                 }
 
                 for result in similar_datasets:
                     dataset = result["dataset"]
+                    similarity_pct = result.get("similarity", 0) * 100
+
                     dataset_info = {
                         "nome": dataset.table_name,
                         "titulo": result["title"],
                         "descricao": result["description"],
                         "registros": dataset.record_count or 0,
                         "status": dataset.get_status_display(),
-                        "relevancia": "{(1 - result['distance']) * 100:.1f}%",
-                        "categorias": [cat.name for cat in dataset.categories.all()],
+                        "relevancia": f"{similarity_pct:.1f}%",
+                        "categorias": [cat.name for cat in dataset.categories.all()] if hasattr(dataset, 'categories') else [],
                         "criado_em": dataset.created_at.strftime("%d/%m/%Y"),
                     }
 
@@ -230,7 +252,7 @@ Sua resposta:"""
 
     def _build_dataset_context(self):
         """
-        Constrói contexto abrangente sobre datasets para o Gemini.
+        Constrói contexto abrangente sobre datasets para o LLM.
         """
         all_processes = DataImportProcess.objects.all()
 
@@ -284,7 +306,7 @@ Sua resposta:"""
         }
 
         if total_datasets > 50:
-            context["nota"] = "Mostrando 50 de {total_datasets} datasets disponíveis"
+            context["nota"] = f"Mostrando 50 de {total_datasets} datasets disponíveis"
 
         return context
 
@@ -304,13 +326,16 @@ class AliceHealthView(APIView):
         health_data = {
             "status": "healthy",
             "service": "Alice AI Assistant",
+            "framework": "LangChain",
             "gemini_configured": bool(
                 gemini_key and gemini_key != "your-gemini-api-key-here"
             ),
             "rag_enabled": bool(
                 gemini_key and gemini_key != "your-gemini-api-key-here"
             ),
+            "vector_store": "pgvector (LangChain)",
             "embedding_model": "Google Gemini models/embedding-001",
+            "llm_model": "Google Gemini gemini-1.5-flash",
             "timestamp": datetime.now().isoformat(),
         }
 

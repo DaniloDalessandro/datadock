@@ -104,16 +104,16 @@
 
 ### 🤖 Alice AI Assistant (RAG)
 
-- ✅ Assistente virtual inteligente powered by Google Gemini
+- ✅ Assistente virtual inteligente powered by **LangChain + Google Gemini**
 - ✅ **RAG (Retrieval Augmented Generation)** com busca vetorial
-- ✅ Busca semântica usando pgvector (PostgreSQL)
-- ✅ Embeddings com Google Gemini (models/embedding-001)
+- ✅ Busca semântica usando **LangChain + pgvector** (PostgreSQL)
+- ✅ Embeddings com Google Gemini (models/embedding-001) via LangChain
 - ✅ Auto-indexação de datasets com Django Signals
 - ✅ Respostas contextualizadas baseadas em dados reais
 - ✅ Top 5 datasets mais relevantes por pergunta
 - ✅ Comando de gerenciamento para indexar datasets existentes
 - ✅ Health check para verificar configurações AI
-- ✅ **100% Gemini** - Sem dependência de OpenAI
+- ✅ **Framework LangChain** - Abstração para diferentes LLMs e fácil extensão
 
 ---
 
@@ -132,8 +132,9 @@
 | Gunicorn | 23.0 | WSGI server (produção) |
 | Pandas | 2.2 | Processamento de dados |
 | openpyxl | 3.1 | Manipulação de Excel |
-| **pgvector** | 0.3.6 | **Busca vetorial (RAG)** |
-| **Google Gemini** | Latest | **Chat + Embeddings (100% Gemini)** |
+| **pgvector** | 0.4.2 | **Busca vetorial (RAG)** |
+| **LangChain** | 0.3.x | **Framework para LLMs e RAG** |
+| **Google Gemini** | Latest | **Chat + Embeddings via LangChain** |
 
 ### Frontend
 
@@ -949,15 +950,15 @@ curl http://localhost:8000/api/data-import/processes/1/download/ \
 
 ---
 
-## 🤖 Alice AI Assistant com RAG
+## 🤖 Alice AI Assistant com RAG (LangChain + pgvector)
 
-Alice é a assistente virtual inteligente do DataDock, powered by **Google Gemini** com **RAG (Retrieval Augmented Generation)** para busca semântica.
+Alice é a assistente virtual inteligente do DataDock, powered by **LangChain + Google Gemini** com **RAG (Retrieval Augmented Generation)** para busca semântica.
 
 ### 🎯 O que é RAG?
 
 RAG combina:
-- **Busca Vetorial**: Encontra datasets semanticamente similares à pergunta
-- **LLM (Gemini)**: Gera respostas naturais baseadas nos dados encontrados
+- **Busca Vetorial**: LangChain + pgvector encontra datasets semanticamente similares
+- **LLM (Gemini)**: ChatGoogleGenerativeAI gera respostas naturais
 - **Contextualização**: Respostas precisas usando dados reais do sistema
 
 ### 🔧 Configuração
@@ -966,16 +967,27 @@ RAG combina:
 
 ```bash
 cd backend
-pip install pgvector==0.3.6
+pip install -r requirements.txt
 ```
+
+Dependências LangChain instaladas:
+- `langchain==0.3.25`
+- `langchain-google-genai==2.1.4`
+- `langchain-postgres==0.0.14`
+- `langchain-core==0.3.51`
+- `sqlalchemy==2.0.41`
+- `pgvector==0.4.2`
 
 #### 2. Configurar variáveis de ambiente
 
 Adicione ao `.env`:
 
 ```bash
-# Google Gemini API Key (usado para chat E embeddings)
+# Google Gemini API Key (usado para chat E embeddings via LangChain)
 GEMINI_API_KEY=sua-chave-gemini-aqui
+
+# PostgreSQL (OBRIGATÓRIO para pgvector)
+DATABASE_URL=postgresql://user:password@localhost:5432/dataport
 ```
 
 **Como obter a chave:**
@@ -1008,10 +1020,10 @@ python manage.py index_datasets --table-name data001
 ### 📊 Como funciona
 
 1. **Pergunta do usuário**: "Quais dados de importação temos?"
-2. **Embedding da pergunta**: Gemini gera vetor de 768 dimensões (models/embedding-001)
-3. **Busca vetorial**: pgvector encontra top 5 datasets similares via L2Distance
-4. **Contexto enriquecido**: Monta contexto com datasets relevantes
-5. **Resposta AI**: Gemini gera resposta natural baseada no contexto
+2. **Embedding da pergunta**: `GoogleGenerativeAIEmbeddings` gera vetor de 768 dimensões
+3. **Busca vetorial**: `PGVector.similarity_search_with_score()` encontra top 5 datasets similares
+4. **Contexto enriquecido**: Monta contexto com datasets relevantes e scores de similaridade
+5. **Resposta AI**: `ChatGoogleGenerativeAI` gera resposta natural baseada no contexto
 
 ### 🔍 Endpoints
 
@@ -1050,9 +1062,12 @@ Authorization: Bearer <token>
 {
   "status": "healthy",
   "service": "Alice AI Assistant",
+  "framework": "LangChain",
   "gemini_configured": true,
   "rag_enabled": true,
+  "vector_store": "pgvector (LangChain)",
   "embedding_model": "Google Gemini models/embedding-001",
+  "llm_model": "Google Gemini gemini-1.5-flash",
   "timestamp": "2025-12-28T10:30:00Z"
 }
 ```
@@ -1071,9 +1086,9 @@ Implementado via **Django Signals** em `alice/signals.py`.
 ```
 alice/
 ├── models.py              # DatasetEmbedding model (VectorField)
-├── views.py               # AliceChatView com RAG
+├── views.py               # AliceChatView com LangChain
 ├── services/
-│   └── vector_service.py  # VectorService (embeddings, busca)
+│   └── vector_service.py  # VectorService (LangChain + pgvector)
 ├── signals.py             # Auto-indexação
 ├── migrations/
 │   └── 0001_enable_vector_extension.py
@@ -1082,7 +1097,39 @@ alice/
         └── index_datasets.py  # Comando de indexação
 ```
 
-### 🎨 Modelo de Embedding
+### 🎨 Stack LangChain
+
+```python
+# Embeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/embedding-001",
+    google_api_key=api_key,
+    task_type="retrieval_document",
+)
+
+# Vector Store
+from langchain_postgres import PGVector
+
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name="alice_datasets",
+    connection=connection_string,
+    use_jsonb=True,
+)
+
+# Chat LLM
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    google_api_key=api_key,
+    temperature=0.7,
+)
+```
+
+### 🎨 Modelo de Embedding (Django)
 
 ```python
 class DatasetEmbedding(models.Model):
@@ -1094,18 +1141,20 @@ class DatasetEmbedding(models.Model):
     updated_at = DateTimeField(auto_now=True)
 ```
 
-### 💡 Dicas
+### 💡 Vantagens do LangChain
 
+- **Abstração**: Facilita trocar de LLM (OpenAI, Anthropic, etc.)
+- **PGVector nativo**: Integração direta com PostgreSQL via `langchain-postgres`
+- **Documents**: Estrutura padronizada para RAG
+- **Chains**: Possibilidade de criar pipelines complexos no futuro
 - **Custo**: Gemini Embeddings são **GRATUITOS** (até 1500 requisições/dia)
 - **Performance**: Busca vetorial é extremamente rápida (ms)
-- **Precisão**: RAG retorna apenas datasets relevantes
 - **Fallback**: Se RAG falhar, usa contexto tradicional
-- **100% Gemini**: Uma única API key para tudo (chat + embeddings)
 
 ### 🔒 Rate Limiting
 
 - **30 requisições/minuto** por usuário
-- Retry automático com exponential backoff
+- Retry automático com exponential backoff (LangChain `max_retries=3`)
 - Cache de contexto (5 minutos)
 
 ---
