@@ -33,6 +33,11 @@ media/
 staticfiles/
 static_root/
 
+# Celery
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
 # Database
 *.sqlite3
 *.db
