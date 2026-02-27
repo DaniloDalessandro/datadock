@@ -32,6 +32,12 @@ db.sqlite3
 db.sqlite3-journal
 /media
 /staticfiles
+/static_root
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
 
 # Environment variables
 .env

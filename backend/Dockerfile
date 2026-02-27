@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     libpq-dev \
     curl \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar e instalar dependências Python (cache layer)

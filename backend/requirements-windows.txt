@@ -1,0 +1,4 @@
+# Dependencias adicionais para Windows
+# Instalar apos requirements.txt: pip install -r requirements-windows.txt
+
+python-magic-bin==0.4.14
