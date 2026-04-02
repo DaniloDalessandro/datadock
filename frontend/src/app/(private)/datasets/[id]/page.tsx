@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { apiGet } from "@/lib/api"
+import { getAccessToken } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { config } from "@/lib/config"
 
@@ -114,7 +115,7 @@ export default function DatasetDetailsPage() {
     setIsUploading(true)
 
     try {
-      const token = localStorage.getItem('access_token')
+      const token = getAccessToken()
       const formData = new FormData()
       formData.append('file', selectedFile)
       formData.append('import_type', 'file')
@@ -173,7 +174,7 @@ export default function DatasetDetailsPage() {
     setIsConfirmDialogOpen(false)
     setIsTogglingStatus(true)
     try {
-      const token = localStorage.getItem('access_token')
+      const token = getAccessToken()
       const response = await fetch(`${config.apiUrl}/api/data-import/processes/${id}/toggle-status/`, {
         method: 'POST',
         headers: {

@@ -141,7 +141,6 @@ export function useDatasets() {
 
   return {
     datasets,
-    vehicles: datasets,
     isLoading,
     loading: isLoading,
     error,
@@ -150,12 +149,7 @@ export function useDatasets() {
     updateDataset,
     deleteDataset,
     getDataset,
-    getVehicle: getDataset,
   }
 }
 
 export default useDatasets
-
-export type Vehicle = Dataset
-export type VehicleFormData = DatasetFormData
-export const useVehicles = useDatasets

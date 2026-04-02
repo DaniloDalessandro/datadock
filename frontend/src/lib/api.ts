@@ -8,6 +8,16 @@ import {
 
 const API_BASE_URL = config.apiUrl
 
+let refreshPromise: Promise<string | null> | null = null
+
+async function refreshTokenOnce(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise
+  refreshPromise = refreshAccessToken().finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
+}
+
 function getAuthHeaders(): HeadersInit {
   const token = getAccessToken()
 
@@ -36,7 +46,7 @@ export async function apiRequest(
   const token = getAccessToken()
   if (token && isTokenExpired(token, 1)) {
     console.log("[API] Token is expired or expiring soon, refreshing...")
-    const newToken = await refreshAccessToken()
+    const newToken = await refreshTokenOnce()
     if (!newToken) {
       console.error("[API] Failed to refresh token, logging out")
       logout()
@@ -58,7 +68,7 @@ export async function apiRequest(
   // Retry com refresh do token se receber 401 (não autorizado)
   if (response.status === 401) {
     console.log("[API] Received 401, attempting token refresh...")
-    const newToken = await refreshAccessToken()
+    const newToken = await refreshTokenOnce()
 
     if (newToken) {
       console.log("[API] Token refreshed successfully, retrying request...")

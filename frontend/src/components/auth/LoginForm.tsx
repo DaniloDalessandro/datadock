@@ -83,7 +83,11 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
         localStorage.setItem("user_data", JSON.stringify(data.user))
       }
 
-      window.location.href = "/dashboard"
+      if (data.user?.must_change_password) {
+        window.location.href = "/change-password"
+      } else {
+        window.location.href = "/dashboard"
+      }
     } catch (error) {
       console.error("Login error:", error)
       if (error instanceof TypeError && error.message.includes("fetch")) {
