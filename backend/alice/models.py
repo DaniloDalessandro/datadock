@@ -44,3 +44,48 @@ class DatasetEmbedding(models.Model):
 
     def __str__(self):
         return f"Embedding: {self.dataset.table_name}"
+
+
+class ConversationSession(models.Model):
+    """Sessão de conversa com o agente Alice"""
+
+    session_id = models.UUIDField(unique=True, db_index=True)
+    user = models.ForeignKey(
+        "accounts.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="alice_sessions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Sessão de Conversa"
+        verbose_name_plural = "Sessões de Conversa"
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Sessão {self.session_id} — {self.user}"
+
+
+class ConversationMessage(models.Model):
+    """Mensagem de uma conversa com o agente"""
+
+    ROLE_CHOICES = [("human", "Usuário"), ("ai", "Alice")]
+
+    session = models.ForeignKey(
+        ConversationSession,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    steps = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Mensagem"
+        verbose_name_plural = "Mensagens"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:60]}"

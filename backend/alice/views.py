@@ -306,6 +306,78 @@ Sua resposta:"""
         return context
 
 
+class AliceAgentView(APIView):
+    """
+    Agente inteligente Alice com SQL real via LangChain ReAct.
+    POST /api/alice/agent/
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AliceRateThrottle]
+
+    def post(self, request):
+        import uuid
+        from alice.services.sql_agent import build_agent, save_memory_to_cache
+
+        user_message = request.data.get("message", "").strip()
+        session_id = request.data.get("session_id") or str(uuid.uuid4())
+
+        if not user_message:
+            return Response(
+                {"success": False, "error": "Mensagem não pode estar vazia"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key or api_key == "your-gemini-api-key-here":
+            return Response(
+                {"success": False, "error": "GEMINI_API_KEY não configurado"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        try:
+            executor, memory = build_agent(session_id)
+            result = executor.invoke({"input": user_message})
+
+            final_answer = result.get("output", "Não foi possível gerar uma resposta.")
+
+            steps = []
+            for action, observation in result.get("intermediate_steps", []):
+                steps.append({
+                    "tool": action.tool,
+                    "input": action.tool_input,
+                    "output": str(observation)[:800],
+                })
+
+            save_memory_to_cache(session_id, memory, user_message, final_answer)
+
+            return Response({
+                "success": True,
+                "response": final_answer,
+                "steps": steps,
+                "session_id": session_id,
+                "timestamp": datetime.now().isoformat(),
+            })
+
+        except ValueError as e:
+            return Response(
+                {"success": False, "error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            error_str = str(e)
+            logger.error(f"AliceAgent error: {error_str}", exc_info=True)
+            if "429" in error_str or "RATE_LIMIT" in error_str:
+                return Response(
+                    {"success": False, "error": "Limite de requisições atingido. Tente em alguns segundos."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+            return Response(
+                {"success": False, "error": "Erro ao processar a pergunta. Tente novamente."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
 class AliceHealthView(APIView):
     """
     Health check para serviço Alice.
