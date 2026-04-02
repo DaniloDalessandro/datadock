@@ -28,6 +28,7 @@ import {
   TOOL_LABELS,
   SUGGESTED_QUESTIONS,
   type AgentStep,
+  type AgentChart,
 } from "@/lib/alice-agent"
 import { getAccessToken } from "@/lib/auth"
 
@@ -38,6 +39,7 @@ interface Message {
   role: "user" | "assistant"
   content: string
   steps?: AgentStep[]
+  charts?: AgentChart[]
   timestamp: Date
   isLoading?: boolean
   isAgent?: boolean
@@ -227,6 +229,7 @@ export default function AlicePage() {
                   isLoading: false,
                   content: result.response,
                   steps: result.steps,
+                  charts: result.charts,
                 }
               : m
           )
@@ -407,6 +410,25 @@ export default function AlicePage() {
                           </p>
                           {msg.steps.map((step, i) => (
                             <StepCard key={i} step={step} index={i} />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Charts */}
+                      {msg.charts && msg.charts.length > 0 && (
+                        <div className="w-full space-y-2">
+                          {msg.charts.map((chart, i) => (
+                            <div key={i} className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                              <div className="px-3 py-2 bg-gray-50 border-b text-xs text-gray-500 flex items-center gap-1">
+                                <BarChart2 className="h-3 w-3" />
+                                {chart.title}
+                              </div>
+                              <img
+                                src={`data:image/png;base64,${chart.image}`}
+                                alt={chart.title}
+                                className="w-full"
+                              />
+                            </div>
                           ))}
                         </div>
                       )}

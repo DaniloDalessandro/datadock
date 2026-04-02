@@ -9,10 +9,16 @@ export interface AgentStep {
   output: string
 }
 
+export interface AgentChart {
+  image: string   // base64 PNG
+  title: string
+}
+
 export interface AgentResponse {
   success: boolean
   response: string
   steps: AgentStep[]
+  charts: AgentChart[]
   session_id: string
   timestamp: string
   error?: string
@@ -42,8 +48,22 @@ export async function askAliceAgent(
 }
 
 export const TOOL_LABELS: Record<string, string> = {
+  // Custom tools
   list_datasets: "Listar datasets",
   search_datasets: "Busca semântica",
+  pandas_analysis: "Análise pandas",
+  generate_chart: "Gerar gráfico",
+  correlation_matrix: "Correlação",
+  detect_data_quality: "Qualidade dos dados",
+  get_value_distribution: "Distribuição de valores",
+  find_related_datasets: "Datasets relacionados",
+  create_analysis_plan: "Planejar análise",
+  // SQLDatabaseToolkit official tools
+  sql_db_list_tables: "Listar tabelas (SQL)",
+  sql_db_schema: "Schema SQL",
+  sql_db_query: "Executar SQL",
+  sql_db_query_checker: "Verificar SQL",
+  // Legacy
   get_table_schema: "Schema da tabela",
   get_data_sample: "Amostra de dados",
   execute_sql: "Executar SQL",
@@ -51,10 +71,10 @@ export const TOOL_LABELS: Record<string, string> = {
 }
 
 export const SUGGESTED_QUESTIONS = [
-  "Quais datasets estão disponíveis no sistema?",
-  "Quantos registros existem em cada dataset?",
-  "Mostre uma amostra dos dados do dataset mais recente",
-  "Quais são as colunas disponíveis no maior dataset?",
-  "Faça uma análise estatística das colunas numéricas",
-  "Quais datasets foram importados este mês?",
+  "Quais datasets estão disponíveis e quantos registros cada um tem?",
+  "Analise a qualidade dos dados do maior dataset",
+  "Quais colunas têm correlação entre si?",
+  "Mostre a distribuição de valores da coluna principal",
+  "Existe algum dataset relacionado que posso cruzar?",
+  "Gere um gráfico de barras com os totais por categoria",
 ]

@@ -342,11 +342,24 @@ class AliceAgentView(APIView):
             final_answer = result.get("output", "Não foi possível gerar uma resposta.")
 
             steps = []
+            charts = []
             for action, observation in result.get("intermediate_steps", []):
+                obs_str = str(observation)
+                # Extract base64 charts from generate_chart tool output
+                if action.tool == "generate_chart":
+                    try:
+                        chart_data = json.loads(obs_str)
+                        if "chart_base64" in chart_data:
+                            charts.append({
+                                "image": chart_data["chart_base64"],
+                                "title": chart_data.get("title", "Gráfico"),
+                            })
+                    except Exception:
+                        pass
                 steps.append({
                     "tool": action.tool,
                     "input": action.tool_input,
-                    "output": str(observation)[:800],
+                    "output": obs_str[:1000],
                 })
 
             save_memory_to_cache(session_id, memory, user_message, final_answer)
@@ -355,6 +368,7 @@ class AliceAgentView(APIView):
                 "success": True,
                 "response": final_answer,
                 "steps": steps,
+                "charts": charts,
                 "session_id": session_id,
                 "timestamp": datetime.now().isoformat(),
             })
