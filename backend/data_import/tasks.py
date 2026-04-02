@@ -35,7 +35,7 @@ def process_data_import_async(
     async_task = None
 
     try:
-        logger.info("Starting async import for table: {table_name}")
+        logger.info(f"Starting async import for table: {table_name}")
 
         from django.contrib.auth import get_user_model
 
@@ -101,7 +101,7 @@ def process_data_import_async(
         }
 
     except Exception as e:
-        logger.error("Error in async import for {table_name}: {str(e)}", exc_info=True)
+        logger.error(f"Error in async import for {table_name}: {str(e)}", exc_info=True)
 
         if async_task:
             async_task.status = (
@@ -138,7 +138,7 @@ def append_data_async(
         dict: Resultado da adição com estatísticas
     """
     try:
-        logger.info("Starting async append for process: {process_id}")
+        logger.info(f"Starting async append for process: {process_id}")
 
         process = DataImportProcess.objects.get(id=process_id)
 
@@ -166,7 +166,7 @@ def append_data_async(
 
     except Exception as e:
         logger.error(
-            "Error in async append for process {process_id}: {str(e)}", exc_info=True
+            f"Error in async append for process {process_id}: {str(e)}", exc_info=True
         )
         # Retry com exponential backoff
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries))

@@ -178,8 +178,11 @@ class UserService:
         Returns:
             Tupla (sucesso, mensagem_erro, User)
         """
+        # Look up user by hashed token since we store SHA-256 hashes
+        import hashlib
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
         try:
-            user = User.objects.get(reset_password_token=token)
+            user = User.objects.get(reset_password_token=token_hash)
         except User.DoesNotExist:
             return False, "Token de redefinição inválido", None
 

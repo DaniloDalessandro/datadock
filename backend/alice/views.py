@@ -5,7 +5,6 @@ Views da Assistente de IA Alice usando LangChain
 import json
 import logging
 import os
-import time
 from datetime import datetime
 
 from django.core.cache import cache
@@ -165,16 +164,12 @@ Sua resposta:"""
             except Exception as e:
                 error_message = str(e)
 
-                # Se for erro de rate limit e não for a última tentativa, retentar com backoff exponencial
-                if (
-                    "429" in error_message or "RATE_LIMIT_EXCEEDED" in error_message
-                ) and attempt < max_retries - 1:
-                    wait_time = (2**attempt) * 3  # Backoff exponencial: 3, 6, 12 segundos
+                # Se for erro de rate limit, retorna imediatamente sem bloquear o worker
+                if "429" in error_message or "RATE_LIMIT_EXCEEDED" in error_message:
                     logger.warning(
-                        f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}"
+                        f"Rate limit hit on attempt {attempt + 1}/{max_retries}, raising 429"
                     )
-                    time.sleep(wait_time)
-                    continue
+                    raise
 
                 # Se for a última tentativa ou erro diferente, lança a exceção
                 raise

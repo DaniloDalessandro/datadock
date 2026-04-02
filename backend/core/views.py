@@ -3,6 +3,8 @@ Views de health checks e monitoramento do sistema
 """
 
 from django.conf import settings
+from django.http import JsonResponse
+from django.views import View
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -121,3 +123,22 @@ class LivenessCheckView(APIView):
             {"alive": True, "message": "Application is alive"},
             status=status.HTTP_200_OK,
         )
+
+
+class SiteConfigurationView(View):
+    """
+    Retorna configurações públicas do site para o frontend.
+    GET /api/site/configuration/
+    """
+
+    def get(self, request):
+        return JsonResponse({
+            'company_name': 'DataDock',
+            'hero_title': 'Gestão Inteligente de Dados',
+            'hero_subtitle': 'Importe, organize e analise seus dados com inteligência',
+            'about_text': 'Sistema de gestão e análise de datasets',
+            'phone': '',
+            'email': '',
+            'address': '',
+            'whatsapp': '',
+        })
