@@ -40,7 +40,7 @@ class DataImportService:
         sanitized = sanitized.lower()
 
         if sanitized and sanitized[0].isdigit():
-            sanitized = "col_{sanitized}"
+            sanitized = f"col_{sanitized}"
 
         return sanitized or "unnamed_column"
 
@@ -167,7 +167,7 @@ class DataImportService:
                     df = pd.read_excel(io.BytesIO(file_content), engine="openpyxl")
 
             else:
-                raise ValueError("Formato de arquivo não suportado: {file_name}")
+                raise ValueError(f"Formato de arquivo não suportado: {file_name}")
 
             if df.empty:
                 raise ValueError("O arquivo está vazio ou não contém dados válidos")
@@ -178,9 +178,9 @@ class DataImportService:
             import traceback
 
             error_details = traceback.format_exc()
-            logger.error("Erro detalhado ao ler arquivo {file_name}:")
+            logger.error(f"Erro detalhado ao ler arquivo {file_name}:")
             logger.error(error_details)
-            raise Exception("Erro ao ler arquivo {file_name}: {str(e)}")
+            raise Exception(f"Erro ao ler arquivo {file_name}: {str(e)}")
 
     @staticmethod
     def dataframe_to_dict_list(df: pd.DataFrame) -> List[Dict]:
@@ -223,19 +223,19 @@ class DataImportService:
 
             if row_count > MAX_ROWS:
                 raise ValueError(
-                    "Arquivo contém {row_count:,} linhas. "
-                    "Máximo permitido: {MAX_ROWS:,} linhas. "
+                    f"Arquivo contém {row_count:,} linhas. "
+                    f"Máximo permitido: {MAX_ROWS:,} linhas. "
                     "Por favor, divida o arquivo em partes menores."
                 )
 
             if col_count > MAX_COLUMNS:
                 raise ValueError(
-                    "Arquivo contém {col_count} colunas. "
-                    "Máximo permitido: {MAX_COLUMNS} colunas."
+                    f"Arquivo contém {col_count} colunas. "
+                    f"Máximo permitido: {MAX_COLUMNS} colunas."
                 )
 
             logger.info(
-                "Processing file with {row_count:,} rows and {col_count} columns"
+                f"Processing file with {row_count:,} rows and {col_count} columns"
             )
 
             data = DataImportService.dataframe_to_dict_list(df)
@@ -244,7 +244,7 @@ class DataImportService:
             return data, column_structure
 
         except Exception as e:
-            raise Exception("Erro ao processar arquivo: {str(e)}")
+            raise Exception(f"Erro ao processar arquivo: {str(e)}")
 
     @staticmethod
     def process_file_data_from_path(file_path: str) -> Tuple[List[Dict], Dict]:
@@ -258,7 +258,7 @@ class DataImportService:
             import os
 
             if not os.path.exists(file_path):
-                raise FileNotFoundError("Arquivo não encontrado: {file_path}")
+                raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
 
             file_extension = os.path.splitext(file_path)[1].lower()
 
@@ -296,7 +296,7 @@ class DataImportService:
 
                 df = pd.read_csv(file_path, encoding=encoding_to_use, delimiter=delimiter_to_use)
             else:
-                raise ValueError("Formato de arquivo não suportado: {file_extension}")
+                raise ValueError(f"Formato de arquivo não suportado: {file_extension}")
 
             if df.empty:
                 raise ValueError("O arquivo está vazio ou não contém dados válidos")
@@ -307,7 +307,7 @@ class DataImportService:
             return data, column_structure
 
         except Exception as e:
-            raise Exception("Erro ao processar arquivo: {str(e)}")
+            raise Exception(f"Erro ao processar arquivo: {str(e)}")
 
     @staticmethod
     def fetch_data_from_endpoint(url: str) -> Tuple[List[Dict], Dict]:
@@ -356,7 +356,7 @@ class DataImportService:
                 except requests.exceptions.SSLError as e:
                     # Fallback: se SSL falhar, tenta sem verificação (menos seguro)
                     logger.warning(
-                        "SSL verification failed, trying without verification: {e}"
+                        f"SSL verification failed, trying without verification: {e}"
                     )
                     response = requests.get(
                         url,
@@ -388,8 +388,8 @@ class DataImportService:
             row_count = len(data)
             if row_count > MAX_ROWS:
                 raise ValueError(
-                    "Endpoint retornou {row_count:,} registros. "
-                    "Máximo permitido: {MAX_ROWS:,} registros. "
+                    f"Endpoint retornou {row_count:,} registros. "
+                    f"Máximo permitido: {MAX_ROWS:,} registros. "
                     "Por favor, use paginação ou filtre os dados no endpoint."
                 )
 
@@ -397,11 +397,11 @@ class DataImportService:
                 col_count = len(data[0].keys())
                 if col_count > MAX_COLUMNS:
                     raise ValueError(
-                        "Endpoint retornou {col_count} colunas. "
-                        "Máximo permitido: {MAX_COLUMNS} colunas."
+                        f"Endpoint retornou {col_count} colunas. "
+                        f"Máximo permitido: {MAX_COLUMNS} colunas."
                     )
 
-            logger.info("Processing endpoint data with {row_count:,} rows")
+            logger.info(f"Processing endpoint data with {row_count:,} rows")
 
             column_structure = DataImportService.analyze_column_structure(data)
 
@@ -413,14 +413,14 @@ class DataImportService:
             )
         except requests.exceptions.RequestException as e:
             raise Exception(
-                "Erro ao buscar dados do endpoint: {str(e)}. Verifique se a URL está correta e o serviço está disponível."
+                f"Erro ao buscar dados do endpoint: {str(e)}. Verifique se a URL está correta e o serviço está disponível."
             )
         except ValueError as e:
             raise Exception(
-                "Erro ao processar os dados retornados: {str(e)}. Certifique-se de que o endpoint retorna dados em formato JSON válido."
+                f"Erro ao processar os dados retornados: {str(e)}. Certifique-se de que o endpoint retorna dados em formato JSON válido."
             )
         except Exception as e:
-            raise Exception("Erro inesperado ao buscar dados: {str(e)}")
+            raise Exception(f"Erro inesperado ao buscar dados: {str(e)}")
 
     @staticmethod
     def analyze_column_structure(data: List[Dict]) -> Dict[str, str]:
@@ -458,7 +458,7 @@ class DataImportService:
         # Mantido para compatibilidade retroativa, mas não faz nada
         # Dados agora são armazenados no modelo ImportedDataRecord usando JSONField
         logger.info(
-            "Skipping dynamic table creation for {table_name} - using ORM model instead"
+            f"Skipping dynamic table creation for {table_name} - using ORM model instead"
         )
 
     @staticmethod
@@ -489,20 +489,20 @@ class DataImportService:
             for col_name, info in column_structure.items()
         }
 
-        logger.info("[DEBUG] Name mapping created with {len(name_mapping)} entries")
-        logger.info("[DEBUG] First 3 mappings: {dict(list(name_mapping.items())[:3])}")
+        logger.debug(f"[DEBUG] Name mapping created with {len(name_mapping)} entries")
+        logger.debug(f"[DEBUG] First 3 mappings: {dict(list(name_mapping.items())[:3])}")
 
         if data:
             first_record_keys = list(data[0].keys())
-            logger.info("[DEBUG] First record has columns: {first_record_keys[:5]}...")
+            logger.debug(f"[DEBUG] First record has columns: {first_record_keys[:5]}...")
 
             matched_keys = [k for k in first_record_keys if k in name_mapping]
             unmatched_keys = [k for k in first_record_keys if k not in name_mapping]
-            logger.info(
-                "[DEBUG] Matched keys: {len(matched_keys)}, Unmatched keys: {len(unmatched_keys)}"
+            logger.debug(
+                f"[DEBUG] Matched keys: {len(matched_keys)}, Unmatched keys: {len(unmatched_keys)}"
             )
             if unmatched_keys:
-                logger.warning("[DEBUG] Unmatched keys: {unmatched_keys[:5]}")
+                logger.warning(f"[DEBUG] Unmatched keys: {unmatched_keys[:5]}")
 
         # Get existing hashes to detect duplicates
         existing_hashes = set(
@@ -534,11 +534,11 @@ class DataImportService:
                 empty_normalized_data_count += 1
                 if empty_normalized_data_count == 1:
                     logger.error(
-                        "[DEBUG] Record {idx} resulted in empty normalized_data!"
+                        f"[DEBUG] Record {idx} resulted in empty normalized_data!"
                     )
-                    logger.error("[DEBUG] Original keys: {list(item.keys())[:5]}")
+                    logger.error(f"[DEBUG] Original keys: {list(item.keys())[:5]}")
                     logger.error(
-                        "[DEBUG] Available mappings: {list(name_mapping.keys())[:5]}"
+                        f"[DEBUG] Available mappings: {list(name_mapping.keys())[:5]}"
                     )
                 continue
 
@@ -547,7 +547,7 @@ class DataImportService:
 
                 if row_hash in existing_hashes:
                     duplicates_skipped += 1
-                    logger.debug("Duplicate record skipped (hash: {row_hash})")
+                    logger.debug(f"Duplicate record skipped (hash: {row_hash})")
                     continue
 
                 records_to_create.append(
@@ -561,15 +561,15 @@ class DataImportService:
 
             except Exception as e:
                 errors += 1
-                logger.error("Error preparing record: {e}")
-                logger.error("Data: {normalized_data}")
+                logger.error(f"Error preparing record: {e}")
+                logger.error(f"Data: {normalized_data}")
                 continue
 
         # Insere registros em lotes de 1000 para melhor performance
         records_inserted = 0
-        logger.info("[DEBUG] Prepared {len(records_to_create)} records for insertion")
-        logger.info(
-            "[DEBUG] Errors so far: {errors}, Duplicates: {duplicates_skipped}"
+        logger.debug(f"[DEBUG] Prepared {len(records_to_create)} records for insertion")
+        logger.debug(
+            f"[DEBUG] Errors so far: {errors}, Duplicates: {duplicates_skipped}"
         )
 
         if records_to_create:
@@ -582,11 +582,11 @@ class DataImportService:
                     )
                     records_inserted += len(batch)
                     logger.info(
-                        "[OK] Inserted batch {i // BATCH_SIZE + 1}: {len(batch)} records"
+                        f"[OK] Inserted batch {i // BATCH_SIZE + 1}: {len(batch)} records"
                     )
 
             except Exception as e:
-                logger.error("[ERROR] Bulk insert failed: {e}")
+                logger.error(f"[ERROR] Bulk insert failed: {e}")
                 import traceback
 
                 logger.error(traceback.format_exc())
@@ -594,11 +594,11 @@ class DataImportService:
                 records_inserted = 0
         else:
             logger.warning(
-                "[WARNING] No records to insert! All {len(data)} records resulted in errors or empty normalized data"
+                f"[WARNING] No records to insert! All {len(data)} records resulted in errors or empty normalized data"
             )
             if empty_normalized_data_count > 0:
                 logger.warning(
-                    "[WARNING] {empty_normalized_data_count} records had empty normalized_data (column name mismatch)"
+                    f"[WARNING] {empty_normalized_data_count} records had empty normalized_data (column name mismatch)"
                 )
 
         total = records_inserted + duplicates_skipped + errors
@@ -682,29 +682,29 @@ class DataImportService:
                     )
                 data, column_structure = DataImportService.process_file_data(file)
             else:
-                raise ValueError("Tipo de importação inválido: {import_type}")
+                raise ValueError(f"Tipo de importação inválido: {import_type}")
 
             logger.info(
-                "Importing data for {table_name} with {len(column_structure)} columns"
+                f"Importing data for {table_name} with {len(column_structure)} columns"
             )
-            logger.info("Data contains {len(data)} records")
+            logger.info(f"Data contains {len(data)} records")
 
             insert_stats = DataImportService.insert_data_orm(
                 process, data, column_structure
             )
 
-            logger.info("Insert stats: {insert_stats}")
+            logger.info(f"Insert stats: {insert_stats}")
 
             process.status = "active"
             process.record_count = insert_stats["inserted"]
             process.column_structure = column_structure
             process.save()
 
-            logger.info("Process updated with record_count={insert_stats['inserted']}")
+            logger.info(f"Process updated with record_count={insert_stats['inserted']}")
 
             if insert_stats["duplicates"] > 0 or insert_stats["errors"] > 0:
                 logger.info(
-                    "Import completed: {insert_stats['inserted']} inserted, {insert_stats['duplicates']} duplicates skipped, {insert_stats['errors']} errors"
+                    f"Import completed: {insert_stats['inserted']} inserted, {insert_stats['duplicates']} duplicates skipped, {insert_stats['errors']} errors"
                 )
 
             return process
@@ -714,4 +714,4 @@ class DataImportService:
             process.error_message = str(e)
             process.save()
 
-            raise Exception("Erro na importação: {str(e)}")
+            raise Exception(f"Erro na importação: {str(e)}")

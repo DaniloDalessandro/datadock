@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 
 from django.conf import settings
@@ -133,14 +134,31 @@ class CustomUser(AbstractUser):
         Gera um token seguro para redefinição de senha.
         Token expira em 24 horas.
         """
-        self.reset_password_token = secrets.token_urlsafe(32)
+        token = secrets.token_urlsafe(32)
+        self.set_reset_token(token)
         from datetime import timedelta
 
         from django.utils import timezone
 
         self.reset_password_token_expires = timezone.now() + timedelta(hours=24)
         self.save()
-        return self.reset_password_token
+        return token
+
+    def set_reset_token(self, token: str) -> None:
+        """
+        Armazena o hash SHA-256 do token de redefinição de senha.
+        O token em texto plano nunca é armazenado no banco de dados.
+        """
+        self.reset_password_token = hashlib.sha256(token.encode()).hexdigest()
+
+    def check_reset_token(self, token: str) -> bool:
+        """
+        Verifica se o token fornecido corresponde ao hash armazenado.
+        """
+        if not self.reset_password_token:
+            return False
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        return self.reset_password_token == token_hash
 
     @staticmethod
     def generate_temporary_password():

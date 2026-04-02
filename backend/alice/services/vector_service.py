@@ -189,8 +189,8 @@ class VectorService:
                 self.vector_store.delete(
                     filter={"dataset_id": dataset.id}
                 )
-            except Exception:
-                pass  # Ignora se não existir
+            except Exception as e:
+                logger.warning(f"Could not delete old vector document: {e}")
 
             # Adiciona novo documento ao vector store
             self.vector_store.add_documents([doc])
@@ -291,10 +291,10 @@ class VectorService:
         try:
             if dataset_ids:
                 datasets = DataImportProcess.objects.filter(
-                    id__in=dataset_ids, status="completed"
+                    id__in=dataset_ids, status__in=["active", "completed"]
                 )
             else:
-                datasets = DataImportProcess.objects.filter(status="completed")
+                datasets = DataImportProcess.objects.filter(status__in=["active", "completed"])
 
             stats["total"] = datasets.count()
             logger.info(f"Iniciando indexação de {stats['total']} datasets")

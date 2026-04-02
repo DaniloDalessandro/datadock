@@ -2,10 +2,14 @@
 Configurações do Django para o projeto DataPort
 """
 
+import logging
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -86,7 +90,7 @@ if DATABASE_URL:
             conn_health_checks=True,
         )
     }
-    print("[OK] Usando PostgreSQL (Docker)")
+    logger.info("[OK] Usando PostgreSQL (Docker)")
 else:
     DATABASES = {
         "default": {
@@ -94,7 +98,7 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-    print("[INFO] Usando SQLite (desenvolvimento local)")
+    logger.info("[INFO] Usando SQLite (desenvolvimento local)")
 
 # Cache: Redis com fallback para memória local se Redis não disponível
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
@@ -125,7 +129,7 @@ try:
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
-    print("[OK] Redis conectado - usando cache Redis")
+    logger.info("[OK] Redis conectado - usando cache Redis")
 except Exception:
     CACHES = {
         "default": {
@@ -135,7 +139,7 @@ except Exception:
         }
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
-    print("[INFO] Redis nao disponivel - usando cache em memoria local")
+    logger.info("[INFO] Redis nao disponivel - usando cache em memoria local")
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -235,8 +239,6 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-from datetime import timedelta
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -251,11 +253,12 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
-# Email: Console backend para desenvolvimento
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email: configurable via environment variable
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend'
+)
 DEFAULT_FROM_EMAIL = "noreply@dataport.com"
-
-# TODO: Para produção, configurar SMTP real (Gmail, SendGrid, etc)
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
@@ -276,9 +279,13 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
-# Logging estruturado com rotação de arquivos
-import os
+from celery.schedules import crontab
 
+CELERY_BEAT_SCHEDULE = {
+    # Add scheduled tasks here
+}
+
+# Logging estruturado com rotação de arquivos
 LOGS_DIR = BASE_DIR / "logs"
 os.makedirs(LOGS_DIR, exist_ok=True)
 

@@ -68,7 +68,7 @@ class DataImportRequestSerializer(serializers.Serializer):
         if file.size > MAX_FILE_SIZE:
             raise serializers.ValidationError(
                 {
-                    "file": "Arquivo muito grande. Tamanho máximo: {MAX_FILE_SIZE // (1024*1024)}MB"
+                    "file": f"Arquivo muito grande. Tamanho máximo: {MAX_FILE_SIZE // (1024*1024)}MB"
                 }
             )
 
@@ -146,7 +146,7 @@ class DataImportRequestSerializer(serializers.Serializer):
         cleaned_lower = cleaned.lower()
         if DataImportProcess.objects.filter(table_name=cleaned_lower).exists():
             raise serializers.ValidationError(
-                'Já existe um dataset com o nome "{cleaned_lower}". Por favor, escolha outro nome.'
+                f'Já existe um dataset com o nome "{cleaned_lower}". Por favor, escolha outro nome.'
             )
 
         return cleaned_lower

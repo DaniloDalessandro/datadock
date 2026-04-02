@@ -15,6 +15,7 @@ from core.views import (
     HealthCheckView,
     LivenessCheckView,
     ReadinessCheckView,
+    SiteConfigurationView,
 )
 
 urlpatterns = [
@@ -31,6 +32,8 @@ urlpatterns = [
     path("health/detailed/", DetailedHealthCheckView.as_view(), name="health-detailed"),
     path("health/ready/", ReadinessCheckView.as_view(), name="health-ready"),
     path("health/live/", LivenessCheckView.as_view(), name="health-live"),
+    # Site configuration (public)
+    path("api/site/configuration/", SiteConfigurationView.as_view(), name="site-configuration"),
     # API v1
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/data-import/", include("data_import.urls")),

@@ -38,10 +38,10 @@ def log_error_safely(error: Exception, context: str = "") -> str:
     error_id = str(uuid.uuid4())[:8]
     error_details = traceback.format_exc()
 
-    logger.error("Error ID {error_id} - {context}")
-    logger.error("Error type: {type(error).__name__}")
-    logger.error("Error message: {str(error)}")
-    logger.error("Traceback:\n{error_details}")
+    logger.error(f"Error ID {error_id} - {context}")
+    logger.error(f"Error type: {type(error).__name__}")
+    logger.error(f"Error message: {str(error)}")
+    logger.error(f"Traceback:\n{error_details}")
 
     return error_id
 

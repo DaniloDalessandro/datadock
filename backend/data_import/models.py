@@ -10,8 +10,13 @@ class DataImportProcess(models.Model):
     """
 
     STATUS_CHOICES = [
-        ("active", "Ativo"),
-        ("inactive", "Inativo"),
+        ('pending', 'Pendente'),
+        ('processing', 'Processando'),
+        ('active', 'Ativo'),
+        ('inactive', 'Inativo'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
+        ('archived', 'Arquivado'),
     ]
 
     table_name = models.CharField(
