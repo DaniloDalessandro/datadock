@@ -18,6 +18,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     networks:
       - dataport-network
 
@@ -55,7 +59,6 @@ services:
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
     volumes:
-      - ./backend:/app
       - backend_logs:/app/logs
       - backend_static:/app/staticfiles
       - backend_media:/app/media
@@ -78,6 +81,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
     networks:
       - dataport-network
 
@@ -95,7 +104,6 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
     volumes:
-      - ./backend:/app
       - backend_logs:/app/logs
     depends_on:
       postgres:
@@ -111,6 +119,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 256M
     networks:
       - dataport-network
 
@@ -128,7 +142,6 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
     volumes:
-      - ./backend:/app
       - celerybeat_schedule:/app/schedule
     depends_on:
       postgres:
@@ -137,7 +150,13 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
-    command: celery -A core beat -l info --schedule=/app/schedule/celerybeat-schedule
+    command: celery -A core beat -l info --schedule=/app/schedule/celerybeat-schedule --pidfile=/tmp/celerybeat.pid
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - dataport-network
 
@@ -145,16 +164,12 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: dataport-frontend
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NODE_ENV=development
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - NODE_ENV=production
     ports:
       - "3000:3000"
     depends_on:
