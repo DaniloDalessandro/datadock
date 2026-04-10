@@ -24,6 +24,10 @@ COPY . .
 # Desabilitar telemetria do Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build arg para NEXT_PUBLIC vars (são embedded no build)
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build da aplicação Next.js (gera output standalone)
 RUN npm run build
 
