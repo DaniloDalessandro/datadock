@@ -1,5 +1,5 @@
 """
-Configurações do Django para o projeto DataPort
+Configurações do Django para o projeto DataDock
 """
 
 import logging
@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "django_filters",
@@ -123,7 +124,7 @@ try:
                     "retry_on_timeout": True,
                 },
             },
-            "KEY_PREFIX": "dataport",
+            "KEY_PREFIX": "datadock",
             "TIMEOUT": 300,
         }
     }
@@ -134,7 +135,7 @@ except Exception:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "dataport-cache",
+            "LOCATION": "datadock-cache",
             "TIMEOUT": 300,
         }
     }
@@ -193,7 +194,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "DataPort API",
+    "TITLE": "DataDock API",
     "DESCRIPTION": """
     Sistema de gerenciamento e importação de dados com suporte a múltiplas fontes.
 
@@ -258,7 +259,7 @@ EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend'
 )
-DEFAULT_FROM_EMAIL = "noreply@dataport.com"
+DEFAULT_FROM_EMAIL = "noreply@datadock.com"
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
@@ -310,7 +311,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": str(LOGS_DIR / "dataport.log"),
+            "filename": str(LOGS_DIR / "datadock.log"),
             "maxBytes": 10485760,
             "backupCount": 5,
             "formatter": "verbose",

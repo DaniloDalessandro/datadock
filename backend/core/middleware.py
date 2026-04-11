@@ -1,5 +1,5 @@
 """
-Middlewares personalizados para o projeto DataPort
+Middlewares personalizados para o projeto DataDock
 """
 
 import re

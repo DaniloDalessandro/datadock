@@ -2,6 +2,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useAuth } from '../useAuth'
 
+// Mock do next/navigation (requer App Router montado em ambiente real)
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+  })),
+}))
+
 // Mock do módulo auth
 vi.mock('@/lib/auth', () => ({
   getAccessToken: vi.fn(),
@@ -9,6 +19,8 @@ vi.mock('@/lib/auth', () => ({
   getUserData: vi.fn(),
   isAuthenticated: vi.fn(),
   logout: vi.fn(),
+  shouldRefreshToken: vi.fn(),
+  refreshAccessToken: vi.fn(),
 }))
 
 describe('useAuth Hook', () => {
@@ -17,12 +29,17 @@ describe('useAuth Hook', () => {
     localStorage.clear()
   })
 
-  it('deve retornar estado inicial correto', () => {
+  it('deve retornar estado inicial correto', async () => {
+    const { isAuthenticated } = await import('@/lib/auth')
+    vi.mocked(isAuthenticated).mockReturnValue(false)
+
     const { result } = renderHook(() => useAuth())
 
-    expect(result.current.isAuthenticated).toBeDefined()
-    expect(result.current.isLoading).toBeDefined()
-    expect(result.current.user).toBeDefined()
+    await waitFor(() => {
+      expect(result.current.isAuthenticated).toBeDefined()
+      expect(result.current.isLoading).toBeDefined()
+      expect(result.current.user).toBeDefined()
+    })
   })
 
   it('deve detectar quando usuário não está autenticado', async () => {

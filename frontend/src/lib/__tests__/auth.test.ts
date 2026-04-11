@@ -16,22 +16,24 @@ describe('Auth Utils', () => {
 
   describe('getAccessToken', () => {
     it('deve retornar null quando não há token', () => {
+      vi.mocked(localStorage.getItem).mockReturnValue(null)
       expect(getAccessToken()).toBeNull()
     })
 
     it('deve retornar o token quando existe', () => {
-      localStorage.setItem('access_token', 'test-token')
+      vi.mocked(localStorage.getItem).mockReturnValue('test-token')
       expect(getAccessToken()).toBe('test-token')
     })
   })
 
   describe('getRefreshToken', () => {
     it('deve retornar null quando não há token', () => {
+      vi.mocked(localStorage.getItem).mockReturnValue(null)
       expect(getRefreshToken()).toBeNull()
     })
 
     it('deve retornar o refresh token quando existe', () => {
-      localStorage.setItem('refresh_token', 'refresh-token')
+      vi.mocked(localStorage.getItem).mockReturnValue('refresh-token')
       expect(getRefreshToken()).toBe('refresh-token')
     })
   })
@@ -65,11 +67,12 @@ describe('Auth Utils', () => {
 
   describe('isAuthenticated', () => {
     it('deve retornar false quando não há token', () => {
+      vi.mocked(localStorage.getItem).mockReturnValue(null)
       expect(isAuthenticated()).toBe(false)
     })
 
     it('deve retornar true quando há token', () => {
-      localStorage.setItem('access_token', 'token')
+      vi.mocked(localStorage.getItem).mockReturnValue('token')
       expect(isAuthenticated()).toBe(true)
     })
   })

@@ -7,18 +7,18 @@ services:
   # Banco de dados PostgreSQL
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: dataport-postgres-dev
+    container_name: datadock-postgres-dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: dataport_dev
-      POSTGRES_USER: dataport
-      POSTGRES_PASSWORD: dataport123
+      POSTGRES_DB: datadock_dev
+      POSTGRES_USER: datadock
+      POSTGRES_PASSWORD: datadock123
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dataport"]
+      test: ["CMD-SHELL", "pg_isready -U datadock"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -26,7 +26,7 @@ services:
   # Redis
   redis:
     image: redis:7-alpine
-    container_name: dataport-redis-dev
+    container_name: datadock-redis-dev
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -41,11 +41,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataport-backend-dev
+    container_name: datadock-backend-dev
     restart: unless-stopped
     environment:
       - DEBUG=True
-      - DATABASE_URL=postgresql://dataport:dataport123@postgres:5432/dataport_dev
+      - DATABASE_URL=postgresql://datadock:datadock123@postgres:5432/datadock_dev
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - ALLOWED_HOSTS=*
@@ -70,11 +70,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataport-celery-dev
+    container_name: datadock-celery-dev
     restart: unless-stopped
     environment:
       - DEBUG=True
-      - DATABASE_URL=postgresql://dataport:dataport123@postgres:5432/dataport_dev
+      - DATABASE_URL=postgresql://datadock:datadock123@postgres:5432/datadock_dev
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
     volumes:
@@ -82,7 +82,7 @@ services:
     depends_on:
       - postgres
       - redis
-    command: celery -A core worker -l debug --reload
+    command: celery -A core worker -l debug
 
   # Frontend Next.js (modo desenvolvimento)
   frontend:
@@ -90,7 +90,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
       target: development
-    container_name: dataport-frontend-dev
+    container_name: datadock-frontend-dev
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000

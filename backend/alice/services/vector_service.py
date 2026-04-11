@@ -57,8 +57,8 @@ class VectorService:
         if db_config.get("ENGINE", "").endswith("postgresql"):
             host = db_config.get("HOST", "localhost")
             port = db_config.get("PORT", "5432")
-            name = db_config.get("NAME", "dataport")
-            user = db_config.get("USER", "dataport")
+            name = db_config.get("NAME", "datadock")
+            user = db_config.get("USER", "datadock")
             password = db_config.get("PASSWORD", "")
             return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{name}"
 

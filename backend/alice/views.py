@@ -88,7 +88,7 @@ class AliceChatView(APIView):
             # Tenta usar RAG para melhor contexto, com fallback para contexto tradicional se necessário
             context = self._get_rag_context(user_message)
 
-            system_prompt = f"""Você é a Alice, assistente virtual do DataPort - um sistema de gestão de dados portuários.
+            system_prompt = f"""Você é a Alice, assistente virtual do DataDock - um sistema de gestão de dados portuários.
 Você deve responder perguntas sobre os datasets cadastrados no sistema de forma clara e objetiva.
 
 CONTEXTO DOS DADOS DISPONÍVEIS:
@@ -336,33 +336,52 @@ class AliceAgentView(APIView):
             )
 
         try:
-            executor, memory = build_agent(session_id)
-            result = executor.invoke({"input": user_message})
+            from langchain_core.messages import HumanMessage, ToolMessage, AIMessage as LCAIMessage
 
-            final_answer = result.get("output", "Não foi possível gerar uma resposta.")
+            graph, message_history = build_agent(session_id)
+            messages_in = message_history + [HumanMessage(content=user_message)]
+            result = graph.invoke({"messages": messages_in})
 
+            # Extract final answer from last AIMessage
+            output_messages = result.get("messages", [])
+            final_answer = "Não foi possível gerar uma resposta."
+            for msg in reversed(output_messages):
+                if isinstance(msg, LCAIMessage) and msg.content:
+                    final_answer = msg.content
+                    break
+
+            # Extract intermediate steps (tool calls + observations)
             steps = []
             charts = []
-            for action, observation in result.get("intermediate_steps", []):
-                obs_str = str(observation)
-                # Extract base64 charts from generate_chart tool output
-                if action.tool == "generate_chart":
-                    try:
-                        chart_data = json.loads(obs_str)
-                        if "chart_base64" in chart_data:
-                            charts.append({
-                                "image": chart_data["chart_base64"],
-                                "title": chart_data.get("title", "Gráfico"),
-                            })
-                    except Exception:
-                        pass
-                steps.append({
-                    "tool": action.tool,
-                    "input": action.tool_input,
-                    "output": obs_str[:1000],
-                })
+            for i, msg in enumerate(output_messages):
+                if isinstance(msg, LCAIMessage) and getattr(msg, "tool_calls", None):
+                    for tc in msg.tool_calls:
+                        tool_name = tc.get("name", "")
+                        tool_input = tc.get("args", {})
+                        tool_call_id = tc.get("id", "")
+                        observation = ""
+                        for j in range(i + 1, len(output_messages)):
+                            tm = output_messages[j]
+                            if isinstance(tm, ToolMessage) and tm.tool_call_id == tool_call_id:
+                                observation = str(tm.content)
+                                break
+                        if tool_name == "generate_chart":
+                            try:
+                                chart_data = json.loads(observation)
+                                if "chart_base64" in chart_data:
+                                    charts.append({
+                                        "image": chart_data["chart_base64"],
+                                        "title": chart_data.get("title", "Gráfico"),
+                                    })
+                            except Exception:
+                                pass
+                        steps.append({
+                            "tool": tool_name,
+                            "input": tool_input,
+                            "output": observation[:1000],
+                        })
 
-            save_memory_to_cache(session_id, memory, user_message, final_answer)
+            save_memory_to_cache(session_id, None, user_message, final_answer)
 
             return Response({
                 "success": True,

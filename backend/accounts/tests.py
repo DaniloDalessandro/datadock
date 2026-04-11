@@ -248,8 +248,8 @@ class AuthenticationAPITest(APITestCase):
     def test_get_current_user(self):
         refresh = RefreshToken.for_user(self.user)
 
-        url = "/api/users/me/"
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer {refresh.access_token}")
+        url = "/api/auth/users/me/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
         response = self.client.get(url)
 
@@ -267,7 +267,7 @@ class PasswordResetAPITest(APITestCase):
         )
 
     def test_request_password_reset(self):
-        url = "/api/users/request_password_reset/"
+        url = "/api/auth/users/request_password_reset/"
         data = {"email": "test@example.com"}
 
         response = self.client.post(url, data, format="json")
@@ -278,7 +278,7 @@ class PasswordResetAPITest(APITestCase):
         self.assertIsNotNone(self.user.reset_password_token)
 
     def test_request_password_reset_nonexistent_email(self):
-        url = "/api/users/request_password_reset/"
+        url = "/api/auth/users/request_password_reset/"
         data = {"email": "nonexistent@example.com"}
 
         response = self.client.post(url, data, format="json")
@@ -288,7 +288,7 @@ class PasswordResetAPITest(APITestCase):
     def test_reset_password_with_valid_token(self):
         token = self.user.generate_reset_token()
 
-        url = "/api/users/reset_password/"
+        url = "/api/auth/users/reset_password/"
         data = {
             "token": token,
             "new_password": "newpassword123",
@@ -309,7 +309,7 @@ class PasswordResetAPITest(APITestCase):
         self.user.reset_password_token_expires = timezone.now() - timedelta(hours=1)
         self.user.save()
 
-        url = "/api/users/reset_password/"
+        url = "/api/auth/users/reset_password/"
         data = {
             "token": token,
             "new_password": "newpassword123",
@@ -321,7 +321,7 @@ class PasswordResetAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_reset_password_with_invalid_token(self):
-        url = "/api/users/reset_password/"
+        url = "/api/auth/users/reset_password/"
         data = {
             "token": "invalid-token-12345",
             "new_password": "newpassword123",
@@ -342,10 +342,10 @@ class ChangePasswordAPITest(APITestCase):
             username="testuser", email="test@example.com", password="oldpassword123"
         )
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer {refresh.access_token}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_change_password_success(self):
-        url = "/api/users/change_password/"
+        url = "/api/auth/users/change_password/"
         data = {
             "old_password": "oldpassword123",
             "new_password": "newpassword123",
@@ -361,7 +361,7 @@ class ChangePasswordAPITest(APITestCase):
         self.assertFalse(self.user.must_change_password)
 
     def test_change_password_wrong_old_password(self):
-        url = "/api/users/change_password/"
+        url = "/api/auth/users/change_password/"
         data = {
             "old_password": "wrongpassword",
             "new_password": "newpassword123",
@@ -374,7 +374,7 @@ class ChangePasswordAPITest(APITestCase):
 
     def test_change_password_mismatch(self):
         """Test password change with mismatched new passwords"""
-        url = "/api/users/change_password/"
+        url = "/api/auth/users/change_password/"
         data = {
             "old_password": "oldpassword123",
             "new_password": "newpassword123",
@@ -388,7 +388,7 @@ class ChangePasswordAPITest(APITestCase):
     def test_change_password_unauthenticated(self):
         self.client.credentials()
 
-        url = "/api/users/change_password/"
+        url = "/api/auth/users/change_password/"
         data = {
             "old_password": "oldpassword123",
             "new_password": "newpassword123",
@@ -406,13 +406,14 @@ class CompanyAPITest(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            username="testuser", email="test@example.com", password="testpass123",
+            is_staff=True,
         )
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer {refresh.access_token}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 
     def test_create_company_authenticated(self):
-        url = "/api/companies/"
+        url = "/api/auth/companies/"
         data = {
             "name": "New Company",
             "cnpj": "12.345.678/0001-90",
@@ -428,7 +429,7 @@ class CompanyAPITest(APITestCase):
         Company.objects.create(name="Company 1", cnpj="11.111.111/0001-11")
         Company.objects.create(name="Company 2", cnpj="22.222.222/0001-22")
 
-        url = "/api/companies/"
+        url = "/api/auth/companies/"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -442,7 +443,7 @@ class CompanyAPITest(APITestCase):
     def test_company_api_requires_authentication(self):
         self.client.credentials()
 
-        url = "/api/companies/"
+        url = "/api/auth/companies/"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

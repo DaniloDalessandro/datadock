@@ -21,11 +21,10 @@ from typing import Any, Optional
 
 import pandas as pd
 from django.core.cache import cache
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain.memory import ConversationSummaryBufferMemory
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_community.utilities import SQLDatabase
-from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from sqlalchemy import create_engine, inspect, text
@@ -611,21 +610,8 @@ CUSTOM_TOOLS = [
 
 # ─── System prompt ────────────────────────────────────────────────────────────
 
-AGENT_SYSTEM_PROMPT = """Você é a Alice, analista de dados sênior do DataPort.
+AGENT_SYSTEM_PROMPT = """Você é a Alice, analista de dados sênior do DataDock.
 Você tem acesso direto aos dados reais via SQL e Python/pandas.
-
-FERRAMENTAS:
-{tools}
-
-COMO AGIR (formato ReAct obrigatório):
-
-Thought: [raciocínio — o que preciso saber, qual ferramenta usar e por quê]
-Action: [nome_da_ferramenta]
-Action Input: [input exato para a ferramenta]
-Observation: [resultado retornado pela ferramenta]
-... (repita quantas vezes necessário)
-Thought: Tenho todos os dados para responder completamente.
-Final Answer: [resposta em português, clara, com markdown quando útil]
 
 ESTRATÉGIA DE ANÁLISE:
 1. Para perguntas simples: use sql_db_query diretamente após sql_db_schema
@@ -646,52 +632,24 @@ REGRAS:
 - Responda sempre em português brasileiro
 - Formate números: 1.234.567
 - Use tabelas markdown para dados tabulares
-- Se gerar gráfico, mencione que ele será exibido no frontend
-
-NOMES DAS FERRAMENTAS: {tool_names}
-
-HISTÓRICO (resumido automaticamente para economizar contexto):
-{chat_history}
-
-PERGUNTA: {input}
-
-{agent_scratchpad}"""
+- Se gerar gráfico, mencione que ele será exibido no frontend"""
 
 
-# ─── Level 3 — Summary + Entity Memory ───────────────────────────────────────
+# ─── Level 3 — Message history from cache ─────────────────────────────────────
 
-def _build_memory(llm, session_id: str) -> ConversationSummaryBufferMemory:
-    """
-    ConversationSummaryBufferMemory:
-    - Mantém as últimas N mensagens na íntegra (buffer)
-    - Resume automaticamente as antigas em um parágrafo
-    - Não perde contexto em conversas longas
-    """
-    memory = ConversationSummaryBufferMemory(
-        llm=llm,
-        max_token_limit=2000,
-        memory_key="chat_history",
-        input_key="input",
-        return_messages=False,
-    )
-
-    cached = cache.get(f"alice_memory_{session_id}")
-    if cached:
-        try:
-            for exchange in cached:
-                memory.save_context(
-                    {"input": exchange["human"]},
-                    {"output": exchange["ai"]},
-                )
-        except Exception:
-            pass
-
-    return memory
+def _load_message_history(session_id: str) -> list:
+    """Loads last 10 conversation exchanges from cache as LangChain messages."""
+    cached = cache.get(f"alice_memory_{session_id}") or []
+    messages = []
+    for exchange in cached[-10:]:
+        messages.append(HumanMessage(content=exchange["human"]))
+        messages.append(AIMessage(content=exchange["ai"]))
+    return messages
 
 
 # ─── Agent builder ────────────────────────────────────────────────────────────
 
-def build_agent(session_id: str) -> tuple[AgentExecutor, Any]:
+def build_agent(session_id: str) -> tuple[Any, list]:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key or api_key == "your-gemini-api-key-here":
         raise ValueError("GEMINI_API_KEY não configurado")
@@ -717,25 +675,17 @@ def build_agent(session_id: str) -> tuple[AgentExecutor, Any]:
             seen.add(t.name)
             tools.append(t)
 
-    # Level 3: Summary buffer memory
-    memory = _build_memory(llm, session_id)
+    # Load conversation history from cache
+    message_history = _load_message_history(session_id)
 
-    prompt = PromptTemplate.from_template(AGENT_SYSTEM_PROMPT)
-
-    agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-
-    executor = AgentExecutor(
-        agent=agent,
+    # Build LangGraph ReAct agent
+    graph = create_react_agent(
+        model=llm,
         tools=tools,
-        memory=memory,
-        verbose=True,
-        handle_parsing_errors=True,
-        max_iterations=12,
-        early_stopping_method="force",
-        return_intermediate_steps=True,
+        prompt=AGENT_SYSTEM_PROMPT,
     )
 
-    return executor, memory
+    return graph, message_history
 
 
 def save_memory_to_cache(

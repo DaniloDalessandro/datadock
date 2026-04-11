@@ -59,11 +59,6 @@ export default function DatasetDetailsPage() {
     try {
       const data = await apiGet(`/api/data-import/processes/${id}/`) as Dataset
       setDataset(data)
-
-      const previewData = await apiGet(`/api/data-import/processes/${id}/preview/`) as {
-        data: Record<string, string | number | boolean>[]
-      }
-      setDataPreview(previewData.data || [])
     } catch (error) {
       console.error('Error loading dataset:', error)
       toast({
@@ -72,6 +67,20 @@ export default function DatasetDetailsPage() {
         variant: 'destructive'
       })
       setDataset(null)
+      setIsLoading(false)
+      setIsRefreshing(false)
+      return
+    }
+
+    // Preview fetch independente — falha silenciosa
+    try {
+      const previewData = await apiGet(`/api/data-import/processes/${id}/preview/`) as {
+        success?: boolean
+        data?: Record<string, string | number | boolean>[]
+      }
+      setDataPreview(previewData?.data || [])
+    } catch {
+      setDataPreview([])
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)

@@ -2,19 +2,19 @@ services:
   # Banco de dados PostgreSQL
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: dataport-postgres
+    container_name: datadock-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-dataport}
-      POSTGRES_USER: ${POSTGRES_USER:-dataport}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dataport123}
+      POSTGRES_DB: ${POSTGRES_DB:-datadock}
+      POSTGRES_USER: ${POSTGRES_USER:-datadock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-datadock123}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dataport}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-datadock}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,12 +23,12 @@ services:
         limits:
           memory: 1G
     networks:
-      - dataport-network
+      - datadock-network
 
   # Redis para cache e Celery
   redis:
     image: redis:7-alpine
-    container_name: dataport-redis
+    container_name: datadock-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
     volumes:
@@ -41,17 +41,17 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - dataport-network
+      - datadock-network
 
   # Backend Django
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataport-backend
+    container_name: datadock-backend
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dataport}:${POSTGRES_PASSWORD:-dataport123}@postgres:5432/${POSTGRES_DB:-dataport}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-datadock}:${POSTGRES_PASSWORD:-datadock123}@postgres:5432/${POSTGRES_DB:-datadock}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
@@ -81,6 +81,7 @@ services:
       sh -c "
         python manage.py migrate --noinput &&
         python manage.py collectstatic --noinput &&
+        python manage.py create_sample_data &&
         gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 --access-logfile - --error-logfile - core.wsgi:application
       "
     healthcheck:
@@ -96,17 +97,17 @@ services:
         reservations:
           memory: 256M
     networks:
-      - dataport-network
+      - datadock-network
 
   # Celery Worker
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataport-celery-worker
+    container_name: datadock-celery-worker
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dataport}:${POSTGRES_PASSWORD:-dataport123}@postgres:5432/${POSTGRES_DB:-dataport}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-datadock}:${POSTGRES_PASSWORD:-datadock123}@postgres:5432/${POSTGRES_DB:-datadock}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
@@ -135,17 +136,17 @@ services:
         reservations:
           memory: 256M
     networks:
-      - dataport-network
+      - datadock-network
 
   # Celery Beat (tarefas agendadas)
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataport-celery-beat
+    container_name: datadock-celery-beat
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dataport}:${POSTGRES_PASSWORD:-dataport123}@postgres:5432/${POSTGRES_DB:-dataport}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-datadock}:${POSTGRES_PASSWORD:-datadock123}@postgres:5432/${POSTGRES_DB:-datadock}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
@@ -167,7 +168,7 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - dataport-network
+      - datadock-network
 
   # Frontend Next.js
   frontend:
@@ -176,7 +177,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://82.25.75.110:8000}
-    container_name: dataport-frontend
+    container_name: datadock-frontend
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://82.25.75.110:8000}
@@ -192,23 +193,23 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - dataport-network
+      - datadock-network
 
 networks:
-  dataport-network:
+  datadock-network:
     driver: bridge
-    name: dataport-network
+    name: datadock-network
 
 volumes:
   postgres_data:
-    name: dataport-postgres-data
+    name: datadock-postgres-data
   redis_data:
-    name: dataport-redis-data
+    name: datadock-redis-data
   backend_logs:
-    name: dataport-backend-logs
+    name: datadock-backend-logs
   backend_static:
-    name: dataport-backend-static
+    name: datadock-backend-static
   backend_media:
-    name: dataport-backend-media
+    name: datadock-backend-media
   celerybeat_schedule:
-    name: dataport-celerybeat-schedule
+    name: datadock-celerybeat-schedule

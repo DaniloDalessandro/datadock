@@ -53,7 +53,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = React.useState({
     name: "Usuário",
-    email: "user@dataport.com",
+    email: "user@datadock.com",
     avatar: "",
   })
 
@@ -64,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const parsed = JSON.parse(userData)
         setUser({
           name: `${parsed.first_name || ""} ${parsed.last_name || ""}`.trim() || "Usuário",
-          email: parsed.email || "user@dataport.com",
+          email: parsed.email || "user@datadock.com",
           avatar: "",
         })
       } catch (error) {

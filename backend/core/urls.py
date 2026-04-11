@@ -1,5 +1,5 @@
 """
-Configuração de URLs do projeto DataPort
+Configuração de URLs do projeto DataDock
 """
 
 from django.contrib import admin

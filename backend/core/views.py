@@ -74,7 +74,7 @@ class DetailedHealthCheckView(APIView):
         health_data = get_system_health()
 
         health_data["app"] = {
-            "name": "DataPort",
+            "name": "DataDock",
             "environment": "development" if settings.DEBUG else "production",
             "debug": settings.DEBUG,
         }

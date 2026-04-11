@@ -1,14 +1,22 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +25,8 @@ import {
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   PieChart,
   Pie,
   Cell,
@@ -24,7 +34,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  Legend,
+  ResponsiveContainer,
 } from "recharts"
 import {
   Database,
@@ -33,9 +44,29 @@ import {
   Clock,
   Maximize2,
   X,
-  FileText
+  FileText,
+  RefreshCw,
+  Eye,
+  Columns3,
+  Calendar,
+  Hash,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getDashboardStats, type DashboardStats } from "@/lib/dashboard-service"
+import { apiGet } from "@/lib/api"
+import { toast } from "sonner"
+import Link from "next/link"
+
+interface PrivateDataset {
+  id: number
+  table_name: string
+  status: string
+  status_display: string
+  record_count: number
+  column_structure: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
 
 interface ChartStates {
   [key: string]: { fullscreen: boolean }
@@ -51,9 +82,6 @@ interface ChartCardProps {
   height?: number
 }
 
-/**
- * Componente de card para gráficos com suporte a fullscreen
- */
 function ChartCard({
   title,
   description,
@@ -61,46 +89,52 @@ function ChartCard({
   chartKey,
   chartStates,
   onToggleFullscreen,
-  height = 350
+  height = 300,
 }: ChartCardProps) {
   const isFullscreen = chartStates[chartKey]?.fullscreen || false
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 border-gray-200">
-      <CardHeader className="pb-3">
+    <Card className="hover:shadow-md transition-all duration-200 border-gray-200">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-gray-900">{title}</CardTitle>
-            {description && <CardDescription className="text-sm mt-1">{description}</CardDescription>}
+            <CardTitle className="text-sm font-semibold text-gray-900">{title}</CardTitle>
+            {description && (
+              <CardDescription className="text-xs mt-0.5">{description}</CardDescription>
+            )}
           </div>
           <Dialog open={isFullscreen} onOpenChange={() => onToggleFullscreen(chartKey)}>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onToggleFullscreen(chartKey)}
-              className="h-8 w-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-              title="Visualizar em tela cheia"
+              className="h-7 w-7 text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+              title="Tela cheia"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-3.5 w-3.5" />
             </Button>
-            <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" showCloseButton={false}>
-              <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="flex-shrink-0 p-6 pb-4 border-b bg-white shadow-sm">
+            <DialogContent
+              className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50"
+              showCloseButton={false}
+            >
+              <div className="h-screen w-screen flex flex-col bg-gray-50">
+                <div className="flex-shrink-0 px-6 py-4 border-b bg-white">
                   <div className="flex items-center justify-between">
-                    <DialogTitle className="text-2xl font-semibold text-gray-900">{title}</DialogTitle>
+                    <DialogTitle className="text-xl font-semibold text-gray-900">
+                      {title}
+                    </DialogTitle>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => onToggleFullscreen(chartKey)}
-                      className="h-10 w-10 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full"
-                      title="Fechar tela cheia"
+                      className="h-9 w-9 text-gray-500 hover:text-gray-900 rounded-full"
                     >
-                      <X className="h-6 w-6" />
+                      <X className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
                 <div className="flex-1 p-8 overflow-hidden">
-                  <div className="h-full bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                  <div className="h-full bg-white rounded-xl shadow border border-gray-200 p-8">
                     <ResponsiveContainer width="100%" height="100%">
                       <>{children}</>
                     </ResponsiveContainer>
@@ -111,10 +145,41 @@ function ChartCard({
           </Dialog>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-4">
         <ResponsiveContainer width="100%" height={height}>
           <>{children}</>
         </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  )
+}
+
+function getStatusColors(status: string): string {
+  const map: Record<string, string> = {
+    active: "bg-green-100 text-green-700 border-green-200",
+    inactive: "bg-gray-100 text-gray-600 border-gray-200",
+    processing: "bg-blue-100 text-blue-700 border-blue-200",
+    pending: "bg-orange-100 text-orange-700 border-orange-200",
+    error: "bg-red-100 text-red-700 border-red-200",
+  }
+  return map[status] || map.inactive
+}
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return n.toLocaleString("pt-BR")
+}
+
+function StatSkeleton() {
+  return (
+    <Card className="border-gray-200">
+      <CardContent className="p-6">
+        <div className="animate-pulse space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-3 w-20" />
+        </div>
       </CardContent>
     </Card>
   )
@@ -124,60 +189,85 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [chartStates, setChartStates] = useState<ChartStates>({})
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
+  const [recentDatasets, setRecentDatasets] = useState<PrivateDataset[]>([])
+  const [topDatasets, setTopDatasets] = useState<{ name: string; records: number }[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const toggleFullscreen = (chartKey: string) => {
-    setChartStates(prev => ({
+    setChartStates((prev) => ({
       ...prev,
-      [chartKey]: {
-        fullscreen: !(prev[chartKey]?.fullscreen || false)
-      }
+      [chartKey]: { fullscreen: !(prev[chartKey]?.fullscreen || false) },
     }))
   }
 
-  // Carrega dados do dashboard ao montar o componente
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
-        const stats = await getDashboardStats()
-        setDashboardData(stats)
-        setError(null)
-      } catch (err) {
-        console.error('Error loading dashboard data:', err)
-        setError('Erro ao carregar dados do dashboard')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchAll = useCallback(async (showToast = false) => {
+    try {
+      setIsRefreshing(true)
+      const [stats, datasetsRes] = await Promise.all([
+        getDashboardStats(),
+        apiGet("/api/data-import/processes/?page_size=100") as Promise<{
+          results: PrivateDataset[]
+        }>,
+      ])
+      setDashboardData(stats)
+      const list: PrivateDataset[] = datasetsRes.results || []
+      const sorted = [...list].sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      )
+      setRecentDatasets(sorted.slice(0, 10))
+      const top10 = [...list]
+        .sort((a, b) => b.record_count - a.record_count)
+        .slice(0, 10)
+        .map((d) => ({
+          name: d.table_name.length > 20 ? d.table_name.slice(0, 18) + "…" : d.table_name,
+          records: d.record_count,
+        }))
+      setTopDatasets(top10)
+      setError(null)
+      setLastUpdated(new Date())
+      if (showToast) toast.success("Dashboard atualizado!")
+    } catch (err) {
+      console.error("Error loading dashboard:", err)
+      setError("Erro ao carregar dados do dashboard")
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
     }
-
-    fetchDashboardData()
   }, [])
+
+  useEffect(() => {
+    fetchAll()
+    autoRefreshRef.current = setInterval(() => fetchAll(), 30000)
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+    }
+  }, [fetchAll])
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-8 p-8 animate-in fade-in duration-500">
-        <div className="grid gap-8 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-gray-200">
-              <CardContent className="p-8">
-                <div className="animate-pulse">
-                  <div className="h-5 bg-gray-200 rounded w-1/2 mb-4"></div>
-                  <div className="h-10 bg-gray-200 rounded w-3/4 mb-3"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-7 w-32 mb-1.5" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-8 w-28" />
         </div>
-
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
+          <StatSkeleton />
+          <StatSkeleton />
+          <StatSkeleton />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
           {[1, 2].map((i) => (
             <Card key={i} className="border-gray-200">
-              <CardContent className="p-8">
+              <CardContent className="p-6">
                 <div className="animate-pulse">
-                  <div className="h-5 bg-gray-200 rounded w-1/3 mb-6"></div>
-                  <div className="h-80 bg-gray-200 rounded"></div>
+                  <Skeleton className="h-4 w-32 mb-4" />
+                  <Skeleton className="h-64 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -189,156 +279,367 @@ export default function DashboardPage() {
 
   if (error || !dashboardData) {
     return (
-      <div className="flex flex-col gap-8 p-8">
+      <div className="flex flex-col gap-6 p-6">
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-8">
-            <p className="text-red-600">{error || 'Erro ao carregar dados'}</p>
+          <CardContent className="p-6">
+            <p className="text-red-600 text-sm">{error || "Erro ao carregar dados"}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => fetchAll()}
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-2" />
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const { metrics, dataset_status, monthly_volume, summary } = dashboardData
+  const { metrics, dataset_status, monthly_volume } = dashboardData
+
+  const TOOLTIP_STYLE = {
+    backgroundColor: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    fontSize: "12px",
+    padding: "8px 12px",
+    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+  }
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-300">
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">Visão geral do sistema DataDock</p>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Visão geral do sistema DataDock</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
-          <Clock className="h-4 w-4" />
-          Atualizado agora
+        <div className="flex items-center gap-2">
+          {lastUpdated && (
+            <span className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
+              <Clock className="h-3.5 w-3.5" />
+              {lastUpdated.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => fetchAll(true)}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
+      {/* Metric cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50/60 to-white hover:shadow-md transition-all">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-base font-medium text-gray-600 mb-1">Datasets Ativos</p>
-                <div className="flex items-baseline gap-3 mt-2">
-                  <h3 className="text-4xl font-bold text-gray-900">{metrics.active_datasets}</h3>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Datasets Ativos</p>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <h3 className="text-3xl font-bold text-gray-900">{metrics.active_datasets}</h3>
                   {metrics.growth_rate > 0 && (
-                    <span className="flex items-center text-base text-green-600 font-medium">
-                      <TrendingUp className="h-4 w-4 mr-1" />
+                    <span className="flex items-center text-xs text-green-600 font-medium">
+                      <TrendingUp className="h-3.5 w-3.5 mr-0.5" />
                       +{metrics.growth_rate}%
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-3">vs. mês anterior</p>
+                <p className="text-xs text-gray-400 mt-1">vs. mês anterior</p>
               </div>
-              <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center">
-                <Database className="h-10 w-10 text-blue-600" />
+              <div className="h-14 w-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Database className="h-7 w-7 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
+        <Card className="border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/60 to-white hover:shadow-md transition-all">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-base font-medium text-gray-600 mb-1">Registros Totais</p>
-                <div className="flex items-baseline gap-3 mt-2">
-                  <h3 className="text-4xl font-bold text-gray-900">
-                    {metrics.total_records >= 1000000
-                      ? `${(metrics.total_records / 1000000).toFixed(1)}M`
-                      : metrics.total_records >= 1000
-                      ? `${(metrics.total_records / 1000).toFixed(1)}K`
-                      : metrics.total_records}
+              <div>
+                <p className="text-sm font-medium text-gray-600">Registros Totais</p>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <h3 className="text-3xl font-bold text-gray-900">
+                    {formatNumber(metrics.total_records)}
                   </h3>
                   {metrics.growth_rate > 0 && (
-                    <span className="flex items-center text-base text-green-600 font-medium">
-                      <TrendingUp className="h-4 w-4 mr-1" />
+                    <span className="flex items-center text-xs text-green-600 font-medium">
+                      <TrendingUp className="h-3.5 w-3.5 mr-0.5" />
                       +{metrics.growth_rate}%
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-3">vs. mês anterior</p>
+                <p className="text-xs text-gray-400 mt-1">vs. mês anterior</p>
               </div>
-              <div className="h-20 w-20 bg-purple-100 rounded-full flex items-center justify-center">
-                <FileText className="h-10 w-10 text-purple-600" />
+              <div className="h-14 w-14 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <FileText className="h-7 w-7 text-purple-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-6">
+        <Card className="border-l-4 border-l-green-500 bg-gradient-to-br from-green-50/60 to-white hover:shadow-md transition-all">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-base font-medium text-gray-600 mb-1">Armazenamento</p>
-                <div className="flex items-baseline gap-3 mt-2">
-                  <h3 className="text-4xl font-bold text-gray-900">{metrics.storage_tb.toFixed(2)}</h3>
-                  <span className="text-lg text-gray-600">TB</span>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Armazenamento</p>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <h3 className="text-3xl font-bold text-gray-900">
+                    {metrics.storage_tb.toFixed(2)}
+                  </h3>
+                  <span className="text-base text-gray-500">TB</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-3">{metrics.storage_percent}% utilizado do total disponível</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {metrics.storage_percent}% do total utilizado
+                </p>
               </div>
-              <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
-                <HardDrive className="h-10 w-10 text-green-600" />
+              <div className="h-14 w-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <HardDrive className="h-7 w-7 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6">
+      {/* Charts row */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Monthly volume – takes 2 cols */}
+        <div className="lg:col-span-2">
+          <ChartCard
+            title="Volume de Dados Mensal"
+            description="Evolução do volume armazenado ao longo dos meses (GB)"
+            chartKey="monthlyVolume"
+            chartStates={chartStates}
+            onToggleFullscreen={toggleFullscreen}
+            height={250}
+          >
+            <AreaChart data={monthly_volume}>
+              <defs>
+                <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11, fill: "#9ca3af" }}
+                stroke="#e5e7eb"
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                tick={{ fontSize: 11, fill: "#9ca3af" }}
+                stroke="#e5e7eb"
+                tickLine={false}
+                width={44}
+              />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                formatter={(v: number) => [`${v} GB`, "Volume"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                fill="url(#colorVolume)"
+                dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </AreaChart>
+          </ChartCard>
+        </div>
+
+        {/* Pie chart – 1 col */}
         <ChartCard
-          title="Volume de Dados Mensal"
-          description="Evolução do volume de dados armazenados ao longo dos meses (em GB)"
-          chartKey="monthlyVolume"
+          title="Distribuição por Status"
+          description="Datasets agrupados por status atual"
+          chartKey="statusPie"
           chartStates={chartStates}
           onToggleFullscreen={toggleFullscreen}
           height={250}
         >
-          <AreaChart data={monthly_volume}>
-            <defs>
-              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeWidth={1} />
+          <PieChart>
+            <Pie
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data={dataset_status as any[]}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={90}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              {dataset_status.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(v: number, name: string) => [v, name]}
+            />
+            <Legend
+              iconSize={8}
+              iconType="circle"
+              formatter={(value) => (
+                <span style={{ fontSize: 11, color: "#6b7280" }}>{value}</span>
+              )}
+            />
+          </PieChart>
+        </ChartCard>
+      </div>
+
+      {/* Top datasets bar chart */}
+      {topDatasets.length > 0 && (
+        <ChartCard
+          title="Top 10 Datasets por Volume de Registros"
+          description="Datasets com maior número de registros"
+          chartKey="topDatasets"
+          chartStates={chartStates}
+          onToggleFullscreen={toggleFullscreen}
+          height={240}
+        >
+          <BarChart data={topDatasets} layout="vertical" margin={{ left: 8, right: 24 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
             <XAxis
-              dataKey="month"
-              tick={{ fontSize: 13, fill: '#6b7280' }}
-              stroke="#9ca3af"
+              type="number"
+              tickFormatter={(v) => formatNumber(v)}
+              tick={{ fontSize: 11, fill: "#9ca3af" }}
+              stroke="#e5e7eb"
               tickLine={false}
             />
             <YAxis
-              tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-              tick={{ fontSize: 13, fill: '#6b7280' }}
-              stroke="#9ca3af"
+              type="category"
+              dataKey="name"
+              tick={{ fontSize: 11, fill: "#6b7280" }}
+              stroke="#e5e7eb"
               tickLine={false}
-              width={50}
+              width={120}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '12px',
-                fontSize: '14px',
-                padding: '12px 16px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-              }}
-              formatter={(value: number, _name: string) => [`${value} GB`, 'Volume Total']}
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(v: number) => [v.toLocaleString("pt-BR"), "Registros"]}
             />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#3b82f6"
-              strokeWidth={3}
-              fill="url(#colorValue)"
-              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
-              activeDot={{ r: 7 }}
-            />
-          </AreaChart>
+            <Bar dataKey="records" fill="#3b82f6" radius={[0, 4, 4, 0]} maxBarSize={18} />
+          </BarChart>
         </ChartCard>
-      </div>
+      )}
+
+      {/* Recent datasets table */}
+      {recentDatasets.length > 0 && (
+        <Card className="border-gray-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold text-gray-900">
+                  Datasets Recentes
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Últimos 10 datasets atualizados
+                </CardDescription>
+              </div>
+              <Link href="/datasets">
+                <Button variant="ghost" size="sm" className="text-xs h-7 text-blue-600 hover:text-blue-700">
+                  Ver todos
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50">
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600">
+                      Nome
+                    </TableHead>
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600">
+                      Status
+                    </TableHead>
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600 text-right">
+                      Registros
+                    </TableHead>
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600 text-right">
+                      Colunas
+                    </TableHead>
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600">
+                      Atualizado
+                    </TableHead>
+                    <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-600 text-right">
+                      Ações
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentDatasets.map((ds) => (
+                    <TableRow key={ds.id} className="hover:bg-gray-50">
+                      <TableCell className="py-2.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-blue-50 p-1 rounded flex-shrink-0">
+                            <Database className="h-3 w-3 text-blue-600" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 truncate max-w-[180px]">
+                            {ds.table_name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColors(ds.status)}`}
+                        >
+                          {ds.status_display || ds.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4 text-sm text-gray-700 text-right">
+                        <span className="flex items-center justify-end gap-1">
+                          <Hash className="h-3 w-3 text-gray-400" />
+                          {ds.record_count.toLocaleString("pt-BR")}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4 text-sm text-gray-700 text-right">
+                        <span className="flex items-center justify-end gap-1">
+                          <Columns3 className="h-3 w-3 text-gray-400" />
+                          {Object.keys(ds.column_structure || {}).length}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          {new Date(ds.updated_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2.5 px-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Abrir dataset"
+                          onClick={() => window.open(`/datasets/${ds.id}`, "_blank")}
+                        >
+                          <Eye className="h-3.5 w-3.5 text-gray-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

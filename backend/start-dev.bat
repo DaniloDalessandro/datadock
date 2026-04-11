@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo  DataPort - Development Startup Script
+echo  DataDock - Development Startup Script
 echo ========================================
 echo.
 

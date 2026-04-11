@@ -56,7 +56,7 @@ class Command(BaseCommand):
                 admin, created = CustomUser.objects.get_or_create(
                     username="demo_admin",
                     defaults={
-                        "email": "admin@dataport.com",
+                        "email": "admin@datadock.com",
                         "first_name": "Admin",
                         "last_name": "Sistema",
                         "profile_type": "interno",
@@ -84,7 +84,7 @@ class Command(BaseCommand):
 
                 internal1 = CustomUser.objects.create_user(
                     username="demo_joao",
-                    email="joao.silva@dataport.com",
+                    email="joao.silva@datadock.com",
                     password="joao123",
                     first_name="João",
                     last_name="Silva",
@@ -105,7 +105,7 @@ class Command(BaseCommand):
 
                 internal2 = CustomUser.objects.create_user(
                     username="demo_maria",
-                    email="maria.santos@dataport.com",
+                    email="maria.santos@datadock.com",
                     password="maria123",
                     first_name="Maria",
                     last_name="Santos",

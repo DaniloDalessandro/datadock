@@ -8,7 +8,7 @@ from celery import Celery
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
-app = Celery("dataport")
+app = Celery("datadock")
 
 app.config_from_object("django.conf:settings", namespace="CELERY")
 

@@ -1,11 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Download, Database, Loader2, Calendar, Hash, Columns3, CheckCircle2 } from "lucide-react"
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
+import {
+  Database,
+  Search,
+  Download,
+  RefreshCw,
+  Loader2,
+  Hash,
+  Columns3,
+  Calendar,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  Eye,
+  EyeOff,
+  Filter,
+  FileDown,
+  Table2,
+  AlertCircle,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -15,29 +33,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ColumnFilterPopover, FilterValue } from "@/components/filters"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { config } from "@/lib/config"
-
-interface ColumnMetadata {
-  name: string
-  type: string
-  filter_type: string
-  unique_values: string[]
-}
-
+import { ColumnFilterPopover, FilterValue } from "@/components/filters"
 
 interface PublicDataset {
   id: number
@@ -47,482 +54,848 @@ interface PublicDataset {
   record_count: number
   column_structure: Record<string, unknown>
   created_at: string
+  updated_at?: string
 }
 
-interface PublicDataResponse {
-  success: boolean;
-  data: Record<string, string | number | boolean>[];
+interface ColumnMetadata {
+  name: string
+  type: string
+  filter_type: string
+  unique_values: string[]
 }
 
-export default function DatasetsPublicosPage() {
-  const [isSearching, setIsSearching] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+type SortDirection = "asc" | "desc" | null
+
+function StatusBadge({ status, display }: { status: string; display: string }) {
+  const colorMap: Record<string, string> = {
+    active: "bg-green-100 text-green-700 border-green-200",
+    inactive: "bg-gray-100 text-gray-600 border-gray-200",
+    processing: "bg-blue-100 text-blue-700 border-blue-200",
+    pending: "bg-orange-100 text-orange-700 border-orange-200",
+    error: "bg-red-100 text-red-700 border-red-200",
+  }
+  const cls = colorMap[status] || colorMap.inactive
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}
+    >
+      {display || status}
+    </span>
+  )
+}
+
+function SortIcon({
+  column,
+  sortColumn,
+  sortDirection,
+}: {
+  column: string
+  sortColumn: string | null
+  sortDirection: SortDirection
+}) {
+  if (sortColumn !== column)
+    return <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 ml-1 flex-shrink-0" />
+  if (sortDirection === "asc")
+    return <ChevronUp className="h-3.5 w-3.5 text-blue-600 ml-1 flex-shrink-0" />
+  return <ChevronDown className="h-3.5 w-3.5 text-blue-600 ml-1 flex-shrink-0" />
+}
+
+const ROWS_PER_PAGE = 50
+
+function DatasetsPublicosContent() {
+  // Dataset list
   const [datasets, setDatasets] = useState<PublicDataset[]>([])
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true)
+  const [datasetSearch, setDatasetSearch] = useState("")
   const [selectedDataset, setSelectedDataset] = useState<PublicDataset | null>(null)
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([])
-  const [downloadFormat, setDownloadFormat] = useState<string>("csv")
+
+  // Data explorer
+  const [isLoadingData, setIsLoadingData] = useState(false)
   const [columnMetadata, setColumnMetadata] = useState<ColumnMetadata[]>([])
+  const [rawData, setRawData] = useState<Record<string, unknown>[]>([])
+  const [globalSearch, setGlobalSearch] = useState("")
   const [activeFilters, setActiveFilters] = useState<Record<string, FilterValue>>({})
-  const [filteredData, setFilteredData] = useState<Record<string, string | number | boolean>[]>([])
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set())
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    const fetchDatasets = async () => {
-      try {
-        const API_BASE_URL = config.apiUrl
-        const response = await fetch(`${API_BASE_URL}/api/data-import/public-datasets/`)
+  // Sidebar collapse on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setDatasets(data.results || [])
-          }
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const autoOpenedRef = useRef(false)
+  const searchParams = useSearchParams()
+  const autoOpenId = searchParams.get("id")
+
+  // ─── Fetch datasets list ─────────────────────────────────────────────────────
+  const fetchDatasets = useCallback(async (silent = false) => {
+    if (!silent) setIsLoadingDatasets(true)
+    try {
+      const res = await fetch(`${config.apiUrl}/api/data-import/public-datasets/`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          setDatasets(data.results || [])
         }
-      } catch (error) {
-        console.error("Error fetching datasets:", error)
-      } finally {
-        setIsLoadingDatasets(false)
       }
+    } catch (err) {
+      console.error("Error fetching datasets:", err)
+    } finally {
+      setIsLoadingDatasets(false)
     }
-
-    fetchDatasets()
   }, [])
 
-  const handleDatasetClick = async (dataset: PublicDataset) => {
+  useEffect(() => {
+    fetchDatasets()
+    autoRefreshRef.current = setInterval(() => fetchDatasets(true), 60000)
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+    }
+  }, [fetchDatasets])
+
+
+  // ─── Fetch dataset data ──────────────────────────────────────────────────────
+  const loadDataset = useCallback(async (dataset: PublicDataset) => {
     setSelectedDataset(dataset)
-    setIsModalOpen(true)
-    setIsSearching(true)
+    setIsLoadingData(true)
+    setRawData([])
+    setColumnMetadata([])
+    setVisibleColumns(new Set())
+    setGlobalSearch("")
+    setActiveFilters({})
+    setSortColumn(null)
+    setSortDirection(null)
+    setCurrentPage(1)
 
     try {
-      const API_BASE_URL = config.apiUrl
-
-      // Busca metadados das colunas
-      const metadataResponse = await fetch(
-        `${API_BASE_URL}/api/data-import/public-metadata/${dataset.id}/`
-      )
-
-      if (metadataResponse.ok) {
-        const metadataData = await metadataResponse.json()
-        if (metadataData.success) {
-          setColumnMetadata(metadataData.columns || [])
-          setSelectedColumns(metadataData.columns?.map((col: ColumnMetadata) => col.name) || [])
+      const [metaRes, dataRes] = await Promise.all([
+        fetch(`${config.apiUrl}/api/data-import/public-metadata/${dataset.id}/`),
+        fetch(`${config.apiUrl}/api/data-import/public-data/${dataset.id}/`),
+      ])
+      if (metaRes.ok) {
+        const meta = await metaRes.json()
+        if (meta.success) {
+          const cols: ColumnMetadata[] = meta.columns || []
+          setColumnMetadata(cols)
+          setVisibleColumns(new Set(cols.map((c) => c.name)))
         }
       }
-
-      // Busca dados do dataset
-      const dataResponse = await fetch(
-        `${API_BASE_URL}/api/data-import/public-data/${dataset.id}/`
-      )
-
-      if (dataResponse.ok) {
-        const data: PublicDataResponse = await dataResponse.json()
-        if (data.success && data.data) {
-          setFilteredData(data.data)
-        }
+      if (dataRes.ok) {
+        const d = await dataRes.json()
+        if (d.success) setRawData(d.data || [])
       }
-    } catch (error) {
-      console.error("Error fetching dataset details:", error)
-      toast.error("Erro ao carregar detalhes do dataset")
+    } catch {
+      toast.error("Erro ao carregar dados do dataset")
     } finally {
-      setIsSearching(false)
+      setIsLoadingData(false)
     }
-  }
+  }, [])
 
-  const handleDownload = async (datasetId: number, tableName: string) => {
-    try {
-      const API_BASE_URL = config.apiUrl
-
-      const params = new URLSearchParams()
-      params.append('file_format', downloadFormat)
-
-      if (selectedColumns.length > 0) {
-        params.append('columns', selectedColumns.join(','))
-      }
-
-      if (Object.keys(activeFilters).length > 0) {
-        params.append('filters', JSON.stringify(activeFilters))
-        console.log('[DOWNLOAD] Enviando filtros:', activeFilters)
-      } else {
-        console.log('[DOWNLOAD] Nenhum filtro aplicado')
-      }
-
-      const url = `${API_BASE_URL}/api/data-import/public-download/${datasetId}/?${params.toString()}`
-      console.log('[DOWNLOAD] URL:', url)
-
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        throw new Error("Erro ao baixar arquivo")
-      }
-
-      const blob = await response.blob()
-      const downloadUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = `${tableName}.${downloadFormat}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(downloadUrl)
-
-      const filterInfo = Object.keys(activeFilters).length > 0
-        ? ` (${displayData.length} registros filtrados)`
-        : ''
-      toast.success(`Arquivo ${tableName}.${downloadFormat} baixado com sucesso!${filterInfo}`)
-    } catch (error) {
-      console.error("Error downloading file:", error)
-      toast.error("Erro ao baixar arquivo")
+  // Auto-seleciona dataset quando ?id= está presente na URL
+  useEffect(() => {
+    if (!autoOpenId || autoOpenedRef.current || datasets.length === 0) return
+    const target = datasets.find((d) => String(d.id) === autoOpenId)
+    if (target) {
+      autoOpenedRef.current = true
+      loadDataset(target)
     }
-  }
+  }, [autoOpenId, datasets, loadDataset])
 
-  const toggleColumn = (columnName: string) => {
-    setSelectedColumns(prev =>
-      prev.includes(columnName)
-        ? prev.filter(col => col !== columnName)
-        : [...prev, columnName]
-    )
-  }
+  // ─── Filter + sort pipeline ──────────────────────────────────────────────────
+  const displayData = useMemo((): Record<string, unknown>[] => {
+    let data = rawData
 
-  const toggleAllColumns = () => {
-    const allColumns = Object.keys(selectedDataset?.column_structure || {})
-    if (selectedColumns.length === allColumns.length) {
-      setSelectedColumns([])
-    } else {
-      setSelectedColumns(allColumns)
+    // Global search
+    if (globalSearch.trim()) {
+      const kw = globalSearch.toLowerCase()
+      data = data.filter((row) =>
+        Object.values(row).some(
+          (v) => v !== null && v !== undefined && String(v).toLowerCase().includes(kw)
+        )
+      )
     }
-  }
 
-  /**
-   * Aplica filtros aos dados baseado nos filtros ativos.
-   * Lógica AND: todos os filtros devem passar para o registro ser incluído.
-   */
-  const applyFilters = (data: Record<string, string | number | boolean>[]) => {
-    if (Object.keys(activeFilters).length === 0) return data
+    // Column filters
+    if (Object.keys(activeFilters).length > 0) {
+      data = data.filter((row) =>
+        Object.entries(activeFilters).every(([col, filter]) => {
+          if (!filter) return true
+          const cell = row[col]
+          const str =
+            cell !== null && cell !== undefined ? String(cell).toLowerCase() : ""
 
-    return data.filter(row => {
-      return Object.entries(activeFilters).every(([columnName, filter]) => {
-        if (!filter) return true
-
-        const cellValue = row[columnName]
-        const strValue = cellValue !== null && cellValue !== undefined ? String(cellValue).toLowerCase() : ""
-
-        switch (filter.type) {
-          case "string":
-            const filterVal = ((filter.value as string) || "").toLowerCase()
-            if (!filterVal) return true
-
-            switch (filter.operator) {
-              case "contains":
-                return strValue.includes(filterVal)
-              case "equals":
-                return strValue === filterVal
-              case "startsWith":
-                return strValue.startsWith(filterVal)
-              case "endsWith":
-                return strValue.endsWith(filterVal)
-              default:
-                return true
+          switch (filter.type) {
+            case "string": {
+              const fv = ((filter.value as string) || "").toLowerCase()
+              if (!fv) return true
+              switch (filter.operator) {
+                case "contains": return str.includes(fv)
+                case "equals": return str === fv
+                case "startsWith": return str.startsWith(fv)
+                case "endsWith": return str.endsWith(fv)
+                default: return true
+              }
             }
-
-          case "number":
-          case "integer":
-          case "float":
-            const numValue = parseFloat(String(cellValue))
-            const numFilter = parseFloat(filter.value as string)
-
-            if (isNaN(numFilter)) return true
-
-            switch (filter.operator) {
-              case "equals":
-                return numValue === numFilter
-              case "notEquals":
-                return numValue !== numFilter
-              case "greaterThan":
-                return numValue > numFilter
-              case "lessThan":
-                return numValue < numFilter
-              case "greaterThanOrEqual":
-                return numValue >= numFilter
-              case "lessThanOrEqual":
-                return numValue <= numFilter
-              case "between":
-                const numFilter2 = parseFloat(filter.value2 || "")
-                return !isNaN(numFilter2) && numValue >= numFilter && numValue <= numFilter2
-              default:
-                return true
+            case "number":
+            case "integer":
+            case "float": {
+              const num = parseFloat(String(cell))
+              const fnum = parseFloat(filter.value as string)
+              if (isNaN(fnum)) return true
+              switch (filter.operator) {
+                case "equals": return num === fnum
+                case "notEquals": return num !== fnum
+                case "greaterThan": return num > fnum
+                case "lessThan": return num < fnum
+                case "greaterThanOrEqual": return num >= fnum
+                case "lessThanOrEqual": return num <= fnum
+                case "between": {
+                  const fnum2 = parseFloat(filter.value2 || "")
+                  return !isNaN(fnum2) && num >= fnum && num <= fnum2
+                }
+                default: return true
+              }
             }
-
-          case "boolean":
-            if (filter.value === "all") return true
-            const boolValue = String(cellValue).toLowerCase()
-            return boolValue === filter.value
-
-          case "category":
-            const selectedValues = filter.value as string[]
-            if (!selectedValues || selectedValues.length === 0) return true
-            return selectedValues.some(val =>
-              String(cellValue).toLowerCase() === val.toLowerCase()
-            )
-
-          case "date":
-          case "datetime":
-            const dateValue = new Date(String(cellValue))
-            const filterDate = new Date(filter.value as string)
-
-            if (isNaN(filterDate.getTime())) return true
-
-            switch (filter.operator) {
-              case "equals":
-                return dateValue.toDateString() === filterDate.toDateString()
-              case "before":
-                return dateValue < filterDate
-              case "after":
-                return dateValue > filterDate
-              case "between":
-                const filterDate2 = new Date(filter.value2 || "")
-                return !isNaN(filterDate2.getTime()) && dateValue >= filterDate && dateValue <= filterDate2
-              default:
-                return true
+            case "boolean":
+              if (filter.value === "all") return true
+              return String(cell).toLowerCase() === (filter.value as string)
+            case "category": {
+              const vals = filter.value as string[]
+              if (!vals || vals.length === 0) return true
+              return vals.some((v) => String(cell).toLowerCase() === v.toLowerCase())
             }
+            case "date":
+            case "datetime": {
+              const dv = new Date(String(cell))
+              const fd = new Date(filter.value as string)
+              if (isNaN(fd.getTime())) return true
+              switch (filter.operator) {
+                case "equals": return dv.toDateString() === fd.toDateString()
+                case "before": return dv < fd
+                case "after": return dv > fd
+                case "between": {
+                  const fd2 = new Date(filter.value2 || "")
+                  return !isNaN(fd2.getTime()) && dv >= fd && dv <= fd2
+                }
+                default: return true
+              }
+            }
+            default: return true
+          }
+        })
+      )
+    }
 
-          default:
-            return true
-        }
+    // Sort
+    if (sortColumn && sortDirection) {
+      data = [...data].sort((a, b) => {
+        const av = a[sortColumn]
+        const bv = b[sortColumn]
+        if (av === null || av === undefined) return 1
+        if (bv === null || bv === undefined) return -1
+        const comparison =
+          typeof av === "number" && typeof bv === "number"
+            ? av - bv
+            : String(av).localeCompare(String(bv), "pt-BR")
+        return sortDirection === "asc" ? comparison : -comparison
       })
-    })
+    }
+
+    return data
+  }, [rawData, globalSearch, activeFilters, sortColumn, sortDirection])
+  const pageCount = Math.max(1, Math.ceil(displayData.length / ROWS_PER_PAGE))
+  const pageData = displayData.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE
+  )
+  const visibleCols = columnMetadata.filter((c) => visibleColumns.has(c.name))
+
+  // ─── Numeric stats ────────────────────────────────────────────────────────────
+  const computeNumericStats = (
+    data: Record<string, unknown>[],
+    cols: ColumnMetadata[]
+  ): Record<string, { min: number; max: number; avg: number }> => {
+    const stats: Record<string, { min: number; max: number; avg: number }> = {}
+    if (data.length === 0) return stats
+    const numCols = cols.filter(
+      (c) => c.type === "integer" || c.type === "float" || c.type === "number"
+    )
+    for (const col of numCols) {
+      const vals = data
+        .map((r) => parseFloat(String(r[col.name])))
+        .filter((v) => !isNaN(v))
+      if (vals.length > 0) {
+        const min = Math.min(...vals)
+        const max = Math.max(...vals)
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length
+        stats[col.name] = { min, max, avg }
+      }
+    }
+    return stats
   }
 
-  const displayData = applyFilters(filteredData)
+  // ─── Sort toggle ──────────────────────────────────────────────────────────────
+  const handleSort = (col: string) => {
+    if (sortColumn !== col) {
+      setSortColumn(col)
+      setSortDirection("asc")
+    } else if (sortDirection === "asc") {
+      setSortDirection("desc")
+    } else {
+      setSortColumn(null)
+      setSortDirection(null)
+    }
+    setCurrentPage(1)
+  }
+
+  // ─── Export ───────────────────────────────────────────────────────────────────
+  const handleExport = async (format: string) => {
+    if (!selectedDataset) return
+    try {
+      toast.info(`Preparando exportação em ${format.toUpperCase()}...`)
+      if (format === "json") {
+        const blob = new Blob([JSON.stringify(displayData, null, 2)], {
+          type: "application/json",
+        })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `${selectedDataset.table_name}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success("JSON exportado com sucesso!")
+        return
+      }
+      const cols = Array.from(visibleColumns)
+      const params = new URLSearchParams({ file_format: format })
+      if (cols.length > 0) params.append("columns", cols.join(","))
+      if (Object.keys(activeFilters).length > 0)
+        params.append("filters", JSON.stringify(activeFilters))
+
+      const res = await fetch(
+        `${config.apiUrl}/api/data-import/public-download/${selectedDataset.id}/?${params}`
+      )
+      if (!res.ok) throw new Error("Erro no download")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${selectedDataset.table_name}.${format}`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success(`${selectedDataset.table_name}.${format} exportado com sucesso!`)
+    } catch {
+      toast.error("Erro ao exportar arquivo")
+    }
+  }
+
+  // ─── Sidebar filtered list ────────────────────────────────────────────────────
+  const sidebarDatasets = datasets.filter((d) =>
+    d.table_name.toLowerCase().includes(datasetSearch.toLowerCase())
+  )
+
+  const stats = computeNumericStats(displayData, columnMetadata)
+  const statsEntries = Object.entries(stats)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b-2 border-blue-200 shadow-sm">
-        <div className="container mx-auto px-6 py-12">
-          <div className="flex items-center gap-6">
-            <div className="bg-white p-5 rounded-2xl shadow-md border-2 border-blue-200">
-              <Database className="h-14 w-14 text-blue-500" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-bold text-gray-800 mb-2 tracking-tight">
-                Datasets Públicos
-              </h1>
-              <p className="text-gray-600 text-xl font-medium flex items-center gap-2">
-                <span className="bg-blue-100 px-4 py-1.5 rounded-full border border-blue-300 text-blue-700">
-                  {datasets.length} {datasets.length === 1 ? 'dataset disponível' : 'datasets disponíveis'}
-                </span>
-              </p>
-            </div>
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* ── Sidebar ── */}
+      <div
+        className={`
+          flex-shrink-0 bg-white border-r border-gray-200 flex flex-col
+          transition-all duration-200
+          ${sidebarOpen ? "w-72" : "w-0 overflow-hidden"}
+          md:w-72 md:overflow-visible
+        `}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-900">Datasets</h2>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-3 py-2 border-b border-gray-100">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <Input
+              placeholder="Buscar..."
+              className="pl-8 h-8 text-xs border-gray-200"
+              value={datasetSearch}
+              onChange={(e) => setDatasetSearch(e.target.value)}
+            />
           </div>
         </div>
+
+        <ScrollArea className="flex-1">
+          {isLoadingDatasets ? (
+            <div className="p-3 space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="p-3 rounded-lg space-y-1.5">
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : sidebarDatasets.length === 0 ? (
+            <div className="p-4 text-center text-sm text-gray-500">
+              Nenhum dataset encontrado
+            </div>
+          ) : (
+            <div className="p-2 space-y-0.5">
+              {sidebarDatasets.map((ds) => {
+                const isSelected = selectedDataset?.id === ds.id
+                return (
+                  <button
+                    key={ds.id}
+                    onClick={() => loadDataset(ds)}
+                    className={`
+                      w-full text-left px-3 py-2.5 rounded-lg transition-colors group
+                      ${isSelected
+                        ? "bg-blue-50 border border-blue-200"
+                        : "hover:bg-gray-50 border border-transparent"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span
+                        className={`text-xs font-medium truncate ${
+                          isSelected ? "text-blue-700" : "text-gray-800"
+                        }`}
+                      >
+                        {ds.table_name}
+                      </span>
+                      <StatusBadge status={ds.status} display={ds.status_display} />
+                    </div>
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <Hash className="h-3 w-3" />
+                      {ds.record_count.toLocaleString("pt-BR")} registros
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </ScrollArea>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        {isLoadingDatasets ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-500 mr-4" />
-            <span className="text-xl text-black font-medium">Carregando datasets...</span>
-          </div>
-        ) : datasets.length === 0 ? (
-          <div className="text-center py-20">
-            <Database className="h-16 w-16 text-blue-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-black mb-2">
-              Nenhum dataset disponível
+      {/* ── Main content ── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {!selectedDataset ? (
+          /* Empty state */
+          <div className="flex-1 flex items-center justify-center flex-col gap-4 text-center px-8">
+            {!sidebarOpen && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                className="mb-4"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Mostrar datasets
+              </Button>
+            )}
+            <div className="bg-gray-100 p-5 rounded-2xl">
+              <Table2 className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700">
+              Selecione um dataset para explorar
             </h3>
-            <p className="text-black">
-              Não há datasets públicos no momento
+            <p className="text-sm text-gray-500 max-w-xs">
+              Escolha um dataset na barra lateral para visualizar, filtrar e exportar os dados
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {datasets.map((dataset) => (
-              <div key={dataset.id} onClick={() => handleDatasetClick(dataset)} className="cursor-pointer">
-                <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border-2 border-blue-100 hover:border-blue-400 bg-white h-full">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-                        <Database className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <Badge className="bg-green-100 text-green-700 border-green-300">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Ativo
-                      </Badge>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-black mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {dataset.table_name}
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center text-sm text-black">
-                          <Hash className="h-4 w-4 mr-2 text-blue-500" />
-                          <span className="font-semibold">{dataset.record_count.toLocaleString()}</span>
-                          <span className="ml-1">registros</span>
-                        </div>
-                        <div className="flex items-center text-sm text-black">
-                          <Columns3 className="h-4 w-4 mr-2 text-blue-500" />
-                          <span className="font-semibold">{Object.keys(dataset.column_structure || {}).length}</span>
-                          <span className="ml-1">colunas</span>
-                        </div>
-                        <div className="flex items-center text-sm text-black">
-                          <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                          <span>{new Date(dataset.created_at).toLocaleDateString("pt-BR")}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Dialog open={isModalOpen} onOpenChange={(open) => {
-        setIsModalOpen(open)
-        if (!open) {
-          setActiveFilters({})
-        }
-      }}>
-        <DialogContent className="!max-w-[98vw] !w-[98vw] !h-[95vh] flex flex-col p-6">
-          {selectedDataset && (
-            <>
-              <DialogHeader className="flex-shrink-0">
-                <DialogTitle className="flex items-center gap-2 text-black">
-                  <Database className="h-5 w-5" />
-                  {selectedDataset.table_name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="flex-shrink-0 flex items-center justify-between py-3 border-b border-gray-200">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Registros:</span>
-                    <span className="font-bold text-black">{selectedDataset.record_count.toLocaleString()}</span>
+          <>
+            {/* Header bar */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  {!sidebarOpen && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => setSidebarOpen(true)}
+                      title="Mostrar sidebar"
+                    >
+                      <Database className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <div className="bg-blue-50 p-1.5 rounded-md flex-shrink-0">
+                    <Database className="h-4 w-4 text-blue-600" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Columns3 className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Colunas:</span>
-                    <span className="font-bold text-black">{Object.keys(selectedDataset.column_structure || {}).length}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Criado em:</span>
-                    <span className="font-bold text-black">{new Date(selectedDataset.created_at).toLocaleDateString("pt-BR")}</span>
+                  <div className="min-w-0">
+                    <h1 className="text-sm font-semibold text-gray-900 truncate">
+                      {selectedDataset.table_name}
+                    </h1>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Hash className="h-3 w-3" />
+                        {selectedDataset.record_count.toLocaleString("pt-BR")} registros
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Columns3 className="h-3 w-3" />
+                        {columnMetadata.length} colunas
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(selectedDataset.created_at).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Select value={downloadFormat} onValueChange={setDownloadFormat}>
-                    <SelectTrigger className="w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="csv">CSV</SelectItem>
-                      <SelectItem value="xlsx">XLSX</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Toolbar actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
-                    onClick={() => handleDownload(selectedDataset.id, selectedDataset.table_name)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => loadDataset(selectedDataset)}
+                    title="Atualizar"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                        <FileDown className="h-3.5 w-3.5" />
+                        Exportar
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuLabel className="text-xs text-gray-500">
+                        Dados filtrados
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleExport("csv")}
+                        className="text-sm"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-2" />
+                        CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleExport("xlsx")}
+                        className="text-sm"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-2" />
+                        Excel (xlsx)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleExport("json")}
+                        className="text-sm"
+                      >
+                        <Download className="h-3.5 w-3.5 mr-2" />
+                        JSON
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+
+            {/* Toolbar row */}
+            <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-6 py-2.5 flex items-center gap-2 flex-wrap">
+              <div className="relative flex-1 min-w-40 max-w-72">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <Input
+                  placeholder="Buscar em todas as colunas..."
+                  className="pl-8 h-8 text-xs bg-white border-gray-200"
+                  value={globalSearch}
+                  onChange={(e) => {
+                    setGlobalSearch(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                />
+              </div>
+
+              {/* Column visibility */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs bg-white">
+                    <EyeOff className="h-3.5 w-3.5" />
+                    Colunas
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto">
+                  <DropdownMenuLabel className="text-xs text-gray-500">
+                    Visibilidade das colunas
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={visibleColumns.size === columnMetadata.length}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setVisibleColumns(new Set(columnMetadata.map((c) => c.name)))
+                      } else {
+                        setVisibleColumns(new Set())
+                      }
+                    }}
+                    className="text-xs font-medium"
+                  >
+                    Todas as colunas
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  {columnMetadata.map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.name}
+                      checked={visibleColumns.has(col.name)}
+                      onCheckedChange={(checked) => {
+                        setVisibleColumns((prev) => {
+                          const next = new Set(prev)
+                          if (checked) next.add(col.name)
+                          else next.delete(col.name)
+                          return next
+                        })
+                      }}
+                      className="text-xs"
+                    >
+                      {col.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Sort */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs bg-white">
+                    <ChevronsUpDown className="h-3.5 w-3.5" />
+                    Ordenar
+                    {sortColumn && (
+                      <span className="text-blue-600 font-medium">
+                        : {sortColumn} ({sortDirection})
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 max-h-64 overflow-y-auto">
+                  <DropdownMenuLabel className="text-xs text-gray-500">
+                    Ordenar por coluna
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {sortColumn && (
+                    <>
+                      <DropdownMenuItem
+                        className="text-xs text-gray-500"
+                        onClick={() => {
+                          setSortColumn(null)
+                          setSortDirection(null)
+                        }}
+                      >
+                        Remover ordenação
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {columnMetadata.map((col) => (
+                    <DropdownMenuItem
+                      key={col.name}
+                      className="text-xs flex items-center justify-between"
+                      onClick={() => handleSort(col.name)}
+                    >
+                      <span>{col.name}</span>
+                      {sortColumn === col.name && (
+                        <span className="text-blue-600 text-xs">
+                          {sortDirection === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Active filters badge */}
+              {Object.keys(activeFilters).length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                    <Filter className="h-3 w-3" />
+                    {Object.keys(activeFilters).length} filtro
+                    {Object.keys(activeFilters).length !== 1 ? "s" : ""}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setActiveFilters({})
+                      setCurrentPage(1)
+                    }}
+                    className="text-xs text-red-600 hover:text-red-800 underline"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Data table */}
+            <div className="flex-1 overflow-auto">
+              {isLoadingData ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mr-3" />
+                  <span className="text-gray-600">Carregando dados...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader className="sticky top-0 z-10">
+                    <TableRow className="bg-gray-50 hover:bg-gray-50">
+                      <TableHead className="py-2.5 px-4 text-xs font-semibold text-gray-500 w-12 bg-gray-50">
+                        #
+                      </TableHead>
+                      {visibleCols.map((col) => (
+                        <TableHead
+                          key={col.name}
+                          className="py-2.5 px-4 text-xs font-semibold text-gray-700 min-w-[140px] bg-gray-50 cursor-pointer select-none"
+                          onClick={() => handleSort(col.name)}
+                        >
+                          <div className="flex items-center gap-1">
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <ColumnFilterPopover
+                                column={col.name}
+                                columnType={col.filter_type}
+                                uniqueValues={col.unique_values}
+                                value={activeFilters[col.name]}
+                                onChange={(value) => {
+                                  setActiveFilters((prev) => {
+                                    if (value === null) {
+                                      const n = { ...prev }
+                                      delete n[col.name]
+                                      return n
+                                    }
+                                    return { ...prev, [col.name]: value }
+                                  })
+                                  setCurrentPage(1)
+                                }}
+                                isActive={!!activeFilters[col.name]}
+                              />
+                            </div>
+                            <span>{col.name}</span>
+                            <SortIcon
+                              column={col.name}
+                              sortColumn={sortColumn}
+                              sortDirection={sortDirection}
+                            />
+                          </div>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pageData.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={visibleCols.length + 1}
+                          className="text-center py-16 text-gray-500"
+                        >
+                          <AlertCircle className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                          <p className="font-medium text-gray-600">Nenhum registro encontrado</p>
+                          <p className="text-xs mt-1">
+                            Tente ajustar os filtros ou a busca
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      pageData.map((row, idx) => (
+                        <TableRow key={idx} className="hover:bg-gray-50">
+                          <TableCell className="py-2 px-4 text-xs text-gray-400 font-mono">
+                            {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                          </TableCell>
+                          {visibleCols.map((col) => (
+                            <TableCell key={col.name} className="py-2 px-4 text-sm text-gray-800">
+                              {row[col.name] !== null && row[col.name] !== undefined ? (
+                                String(row[col.name])
+                              ) : (
+                                <span className="text-gray-300">—</span>
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            {/* Stats strip */}
+            {!isLoadingData && statsEntries.length > 0 && (
+              <div className="flex-shrink-0 bg-slate-50 border-t border-gray-200 px-6 py-2 overflow-x-auto">
+                <div className="flex items-center gap-4 text-xs text-gray-600 whitespace-nowrap">
+                  <span className="font-medium text-gray-500 flex-shrink-0">Estatísticas:</span>
+                  {statsEntries.slice(0, 6).map(([col, s]) => (
+                    <span key={col} className="flex items-center gap-2 bg-white border border-gray-200 rounded px-2.5 py-1">
+                      <span className="font-medium text-gray-700">{col}:</span>
+                      <span>mín <b>{s.min.toFixed(2)}</b></span>
+                      <span className="text-gray-300">·</span>
+                      <span>máx <b>{s.max.toFixed(2)}</b></span>
+                      <span className="text-gray-300">·</span>
+                      <span>média <b>{s.avg.toFixed(2)}</b></span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!isLoadingData && displayData.length > 0 && (
+              <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-white text-sm text-gray-600">
+                <span>
+                  Mostrando{" "}
+                  <span className="font-medium text-gray-900">
+                    {(currentPage - 1) * ROWS_PER_PAGE + 1}–
+                    {Math.min(currentPage * ROWS_PER_PAGE, displayData.length)}
+                  </span>{" "}
+                  de{" "}
+                  <span className="font-medium text-gray-900">
+                    {displayData.length}
+                  </span>{" "}
+                  registros
+                  {displayData.length !== rawData.length && (
+                    <span className="text-gray-500 ml-1">
+                      (filtrado de {rawData.length})
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
                     variant="outline"
                     size="sm"
-                    className="border-gray-300 hover:bg-gray-100 hover:border-black"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="h-7 px-3 text-xs"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
+                    Anterior
+                  </Button>
+                  <span className="text-xs text-gray-500">
+                    Página {currentPage} de {pageCount}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= pageCount}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="h-7 px-3 text-xs"
+                  >
+                    Próxima
                   </Button>
                 </div>
               </div>
-
-              <div className="flex-1 overflow-auto mt-4">
-                {isSearching ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-black mr-3" />
-                    <span className="text-lg text-gray-700 font-medium">Carregando dados...</span>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50">
-                          <TableHead className="w-[50px] font-bold text-black sticky top-0 bg-gray-50">
-                            <Checkbox
-                              checked={selectedColumns.length === Object.keys(selectedDataset.column_structure || {}).length}
-                              onCheckedChange={toggleAllColumns}
-                            />
-                          </TableHead>
-                          {columnMetadata
-                            .filter(col => selectedColumns.includes(col.name))
-                            .map((column) => (
-                              <TableHead key={column.name} className="font-bold text-black sticky top-0 bg-gray-50 min-w-[150px]">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      checked={selectedColumns.includes(column.name)}
-                                      onCheckedChange={() => toggleColumn(column.name)}
-                                    />
-                                    <span>{column.name}</span>
-                                  </div>
-                                  <ColumnFilterPopover
-                                    column={column.name}
-                                    columnType={column.filter_type}
-                                    uniqueValues={column.unique_values}
-                                    value={activeFilters[column.name]}
-                                    onChange={(value) => {
-                                      setActiveFilters(prev => {
-                                        if (value === null) {
-                                          const newFilters = { ...prev }
-                                          delete newFilters[column.name]
-                                          return newFilters
-                                        }
-                                        return {
-                                          ...prev,
-                                          [column.name]: value
-                                        }
-                                      })
-                                    }}
-                                    isActive={!!activeFilters[column.name]}
-                                  />
-                                </div>
-                              </TableHead>
-                            ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {displayData.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={selectedColumns.length + 1}
-                              className="text-center py-12 text-gray-500"
-                            >
-                              Nenhum registro encontrado
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          displayData.map((row, idx) => (
-                            <TableRow key={idx} className="hover:bg-gray-50">
-                              <TableCell className="text-gray-400 font-mono text-sm">
-                                {idx + 1}
-                              </TableCell>
-                              {columnMetadata
-                                .filter(col => selectedColumns.includes(col.name))
-                                .map((column) => (
-                                  <TableCell key={column.name} className="text-black">
-                                    {row[column.name] !== null && row[column.name] !== undefined
-                                      ? String(row[column.name])
-                                      : '-'}
-                                  </TableCell>
-                                ))}
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </>
+        )}
+      </div>
     </div>
+  )
+}
+
+export default function DatasetsPublicosPage() {
+  return (
+    <Suspense fallback={null}>
+      <DatasetsPublicosContent />
+    </Suspense>
   )
 }

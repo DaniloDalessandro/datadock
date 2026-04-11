@@ -23,8 +23,8 @@ Sistema de gerenciamento e importação de dados com suporte a múltiplas fontes
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/dataport.git
-cd dataport
+git clone https://github.com/seu-usuario/datadock.git
+cd datadock
 ```
 
 ### 2. Configure as variáveis de ambiente
@@ -33,8 +33,8 @@ Crie um arquivo `.env` na raiz do projeto:
 
 ```bash
 # Postgres
-POSTGRES_DB=dataport
-POSTGRES_USER=dataport
+POSTGRES_DB=datadock
+POSTGRES_USER=datadock
 POSTGRES_PASSWORD=sua-senha-segura
 
 # Redis
@@ -101,9 +101,9 @@ docker-compose exec backend python manage.py createsuperuser
 
 | Variável | Descrição | Padrão |
 |----------|-----------|--------|
-| `POSTGRES_DB` | Nome do banco de dados | `dataport` |
-| `POSTGRES_USER` | Usuário do PostgreSQL | `dataport` |
-| `POSTGRES_PASSWORD` | Senha do PostgreSQL | `dataport123` |
+| `POSTGRES_DB` | Nome do banco de dados | `datadock` |
+| `POSTGRES_USER` | Usuário do PostgreSQL | `datadock` |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL | `datadock123` |
 | `REDIS_PASSWORD` | Senha do Redis | `redis123` |
 
 #### Senha do Redis
@@ -217,13 +217,13 @@ Requer configuração do `.env` na raiz e `backend/.env`.
 
 | Container | Imagem | Porta | Descrição |
 |-----------|--------|-------|-----------|
-| `dataport-postgres` | pgvector/pgvector:pg16 | 5432 | Banco de dados com suporte a vetores |
-| `dataport-redis` | redis:7-alpine | 6379 | Cache e broker do Celery |
-| `dataport-backend` | ./backend | 8000 | API Django + Gunicorn |
-| `dataport-celery-worker` | ./backend | - | Worker para tarefas assíncronas |
-| `dataport-celery-beat` | ./backend | - | Agendador de tarefas |
-| `dataport-frontend` | ./frontend | 3000 | Next.js |
-| `dataport-nginx` | nginx:alpine | 80, 443 | Proxy reverso |
+| `datadock-postgres` | pgvector/pgvector:pg16 | 5432 | Banco de dados com suporte a vetores |
+| `datadock-redis` | redis:7-alpine | 6379 | Cache e broker do Celery |
+| `datadock-backend` | ./backend | 8000 | API Django + Gunicorn |
+| `datadock-celery-worker` | ./backend | - | Worker para tarefas assíncronas |
+| `datadock-celery-beat` | ./backend | - | Agendador de tarefas |
+| `datadock-frontend` | ./frontend | 3000 | Next.js |
+| `datadock-nginx` | nginx:alpine | 80, 443 | Proxy reverso |
 
 ### Comandos úteis
 
@@ -242,7 +242,7 @@ docker-compose exec backend python manage.py shell
 
 # Acessar shell do container
 docker-compose exec backend bash
-docker-compose exec postgres psql -U dataport
+docker-compose exec postgres psql -U datadock
 
 # Reiniciar um serviço
 docker-compose restart backend
@@ -261,10 +261,10 @@ docker-compose up -d --build
 
 ```bash
 # Backup do banco
-docker-compose exec postgres pg_dump -U dataport dataport > backup.sql
+docker-compose exec postgres pg_dump -U datadock datadock > backup.sql
 
 # Restore do banco
-docker-compose exec -T postgres psql -U dataport dataport < backup.sql
+docker-compose exec -T postgres psql -U datadock datadock < backup.sql
 ```
 
 ### Health Checks

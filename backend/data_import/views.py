@@ -439,7 +439,7 @@ class ToggleStatusView(APIView):
 
             if process.status == "active":
                 process.status = "inactive"
-                message = "Processo {process.table_name} marcado como inativo"
+                message = f"Processo {process.table_name} marcado como inativo"
             else:
                 process.status = "active"
                 message = f"Processo {process.table_name} marcado como ativo"
