@@ -41,6 +41,6 @@ urlpatterns = [
     # Legacy endpoints (compatibilidade retroativa)
     # TODO: Descontinuar endpoints legados sem versionamento
     path("api/auth/", include("accounts.urls")),
-    path("api/data-import/", include("data_import.urls")),
-    path("api/alice/", include("alice.urls")),
+    path("api/data-import/", include(("data_import.urls", "data_import"), namespace="data_import_legacy")),
+    path("api/alice/", include(("alice.urls", "alice"), namespace="alice_legacy")),
 ]

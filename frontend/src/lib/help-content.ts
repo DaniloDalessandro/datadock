@@ -11,7 +11,7 @@ interface Tutorial {
   category: string
   level: 'Básico' | 'Intermediário' | 'Avançado'
   duration: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   steps: string[]
   tips?: string[]
 }

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
-import { Database, Calendar, ArrowLeft, Upload, X, RefreshCw, Hash, Columns3, Archive, ArchiveRestore } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import {
+  Database, Calendar, ArrowLeft, Upload, X, RefreshCw,
+  Hash, Columns3, Archive, ArchiveRestore, ChevronRight,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,10 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { apiGet } from "@/lib/api"
 import { getAccessToken } from "@/lib/auth"
-import { useToast } from "@/hooks/use-toast"
 import { config } from "@/lib/config"
+import { toast } from "sonner"
 
 interface Dataset {
   id: number
@@ -40,10 +42,47 @@ interface Dataset {
   updated_at: string
 }
 
+/* ── Shared style helpers ───────────────────────────────────── */
+
+const btnOutline: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #dddddd",
+  color: "#3f3f3f",
+  borderRadius: "8px",
+  fontSize: "13px",
+}
+
+/* ── Meta card ──────────────────────────────────────────────── */
+function MetaCard({ label, value, icon: Icon, statusNode, dataset }: {
+  label: string
+  value?: string | number | null
+  icon?: React.ElementType | null
+  statusNode?: boolean
+  dataset?: Dataset
+}) {
+  return (
+    <div>
+      <p style={{ fontSize: "11px", color: "#929292", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 510 }}>
+        {label}
+      </p>
+      {statusNode && dataset ? (
+        <StatusBadge status={dataset.status} className="px-[10px] py-[2px] text-xs">
+          {dataset.status_display || dataset.status}
+        </StatusBadge>
+      ) : (
+        <div className="flex items-center gap-2">
+          {Icon && <Icon style={{ width: "14px", height: "14px", color: "#929292", flexShrink: 0 }} />}
+          <span style={{ fontSize: "15px", fontWeight: 510, color: "#222222" }}>{value}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Page ───────────────────────────────────────────────────── */
 export default function DatasetDetailsPage() {
   const params = useParams()
   const id = params.id as string
-  const { toast } = useToast()
   const [dataset, setDataset] = useState<Dataset | null>(null)
   const [dataPreview, setDataPreview] = useState<Record<string, string | number | boolean>[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -60,19 +99,14 @@ export default function DatasetDetailsPage() {
       const data = await apiGet(`/api/data-import/processes/${id}/`) as Dataset
       setDataset(data)
     } catch (error) {
-      console.error('Error loading dataset:', error)
-      toast({
-        title: 'Erro ao carregar dataset',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive'
-      })
+      console.error("Error loading dataset:", error)
+      toast.error(error instanceof Error ? error.message : "Erro ao carregar dataset")
       setDataset(null)
       setIsLoading(false)
       setIsRefreshing(false)
       return
     }
 
-    // Preview fetch independente — falha silenciosa
     try {
       const previewData = await apiGet(`/api/data-import/processes/${id}/preview/`) as {
         success?: boolean
@@ -88,31 +122,18 @@ export default function DatasetDetailsPage() {
   }, [id])
 
   useEffect(() => {
-    if (id) {
-      loadDataset()
-    }
+    if (id) loadDataset()
   }, [id, loadDataset])
 
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    loadDataset()
-  }
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
-      const validExtensions = ['.xls', '.xlsx', '.csv']
-      const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
-
-      if (validExtensions.includes(fileExtension)) {
+      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase()
+      if ([".xls", ".xlsx", ".csv"].includes(ext)) {
         setSelectedFile(file)
       } else {
-        toast({
-          title: 'Formato inválido',
-          description: 'Por favor, selecione apenas arquivos XLS, XLSX ou CSV',
-          variant: 'destructive'
-        })
-        event.target.value = ''
+        toast.error("Por favor, selecione apenas arquivos XLS, XLSX ou CSV")
+        e.target.value = ""
       }
     }
   }
@@ -120,440 +141,728 @@ export default function DatasetDetailsPage() {
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedFile || !dataset) return
-
     setIsUploading(true)
-
     try {
       const token = getAccessToken()
       const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('import_type', 'file')
-      formData.append('table_name', dataset.table_name)
+      formData.append("file", selectedFile)
+      formData.append("import_type", "file")
+      formData.append("table_name", dataset.table_name)
 
       const response = await fetch(`${config.apiUrl}/api/data-import/processes/${id}/append/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
-        credentials: 'include',
+        credentials: "include",
       })
 
       if (response.ok) {
         const data = await response.json()
-        toast({
-          title: 'Sucesso!',
-          description: data.message || `Registros adicionados com sucesso!`
-        })
+        toast.success(data.message || "Registros adicionados com sucesso!")
         setIsUploadDialogOpen(false)
         setSelectedFile(null)
-        loadDataset() // Reload dataset
+        loadDataset()
       } else {
         const errorData = await response.json()
-        toast({
-          title: 'Erro ao carregar arquivo',
-          description: errorData.error || 'Erro desconhecido',
-          variant: 'destructive'
-        })
+        toast.error(errorData.error || "Erro ao carregar arquivo")
       }
     } catch (error) {
-      console.error('Error uploading file:', error)
-      toast({
-        title: 'Erro ao carregar arquivo',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive'
-      })
+      toast.error(error instanceof Error ? error.message : "Erro ao carregar arquivo")
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleCancelUpload = () => {
-    setIsUploadDialogOpen(false)
-    setSelectedFile(null)
-  }
-
-  const handleToggleStatusClick = () => {
-    setIsConfirmDialogOpen(true)
-  }
-
   const handleConfirmToggleStatus = async () => {
     if (!dataset) return
-
     setIsConfirmDialogOpen(false)
     setIsTogglingStatus(true)
     try {
       const token = getAccessToken()
       const response = await fetch(`${config.apiUrl}/api/data-import/processes/${id}/toggle-status/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        credentials: "include",
       })
-
       if (response.ok) {
         const data = await response.json()
-        toast({
-          title: 'Sucesso!',
-          description: data.message || 'Status alterado com sucesso!'
-        })
-        loadDataset() // Reload dataset
+        toast.success(data.message || "Status alterado com sucesso!")
+        loadDataset()
       } else {
         const errorData = await response.json()
-        toast({
-          title: 'Erro ao alterar status',
-          description: errorData.error || 'Erro desconhecido',
-          variant: 'destructive'
-        })
+        toast.error(errorData.error || "Erro ao alterar status")
       }
     } catch (error) {
-      console.error('Error toggling status:', error)
-      toast({
-        title: 'Erro ao alterar status',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive'
-      })
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar status")
     } finally {
       setIsTogglingStatus(false)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "archived":
-        return "bg-gray-100 text-gray-800"
-      case "processing":
-        return "bg-blue-100 text-blue-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Ativo"
-      case "archived":
-        return "Arquivado"
-      case "processing":
-        return "Processando"
-      default:
-        return status
-    }
-  }
-
+  /* ── Loading state ── */
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Carregando detalhes do dataset...</span>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#ffffff" }}
+      >
+        <div className="text-center">
+          <div
+            className="mx-auto"
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              border: "2px solid #dddddd",
+              borderTopColor: "#ff385c",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+          <p className="mt-3" style={{ fontSize: "13px", color: "#929292" }}>
+            Carregando dataset...
+          </p>
+        </div>
       </div>
     )
   }
 
+  /* ── Not found state ── */
   if (!dataset) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Database className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Dataset não encontrado
-        </h3>
-        <p className="text-gray-500 mb-4">
-          O dataset que você está procurando não existe ou foi removido.
-        </p>
-        <Button onClick={() => window.close()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: "#ffffff" }}
+      >
+        <div
+          style={{
+            padding: "14px",
+            borderRadius: "14px",
+            background: "rgba(255,56,92,0.06)",
+          }}
+        >
+          <Database style={{ width: "40px", height: "40px", color: "#ff385c" }} />
+        </div>
+        <div className="text-center">
+          <h3 style={{ fontSize: "16px", fontWeight: 590, color: "#222222", marginBottom: "6px" }}>
+            Dataset não encontrado
+          </h3>
+          <p style={{ fontSize: "14px", color: "#6a6a6a" }}>
+            O dataset não existe ou foi removido.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.close()}
+          style={{ ...btnOutline, display: "flex", alignItems: "center", gap: "6px" }}
+        >
+          <ArrowLeft style={{ width: "14px", height: "14px" }} />
           Fechar
         </Button>
       </div>
     )
   }
 
+  /* ── Main page ── */
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="w-full space-y-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Database className="h-8 w-8 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{dataset.table_name}</h1>
-              <div className="flex items-center gap-3 mt-3">
-                <Badge className={getStatusColor(dataset.status)}>
-                  {getStatusLabel(dataset.status)}
-                </Badge>
-                <span className="text-sm text-gray-500">
-                  ID: {dataset.id}
-                </span>
-              </div>
+    <div className="min-h-screen" style={{ background: "#ffffff" }}>
+
+      {/* ── Page header ── */}
+      <div style={{ padding: "24px 32px 0" }}>
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <span style={{ fontSize: "13px", color: "#6a6a6a", cursor: "pointer" }}
+            onClick={() => window.history.back()}>
+            Datasets
+          </span>
+          <ChevronRight style={{ width: "13px", height: "13px", color: "#929292" }} />
+          <span style={{ fontSize: "13px", color: "#6a6a6a" }} className="truncate max-w-xs">
+            {dataset.table_name}
+          </span>
+        </div>
+
+        {/* Title + actions row */}
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: 510,
+                letterSpacing: "-0.288px",
+                color: "#222222",
+                lineHeight: 1.2,
+                marginBottom: "10px",
+              }}
+            >
+              {dataset.table_name}
+            </h1>
+
+            {/* Metadata badges */}
+            <div className="flex items-center flex-wrap gap-2">
+              <StatusBadge status={dataset.status} className="px-[10px] py-[2px] text-xs">
+                {dataset.status_display || dataset.status}
+              </StatusBadge>
+
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#6a6a6a",
+                  background: "#f7f7f7",
+                  border: "1px solid #ebebeb",
+                  borderRadius: "9999px",
+                  padding: "2px 10px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <Hash style={{ width: "11px", height: "11px" }} />
+                {dataset.record_count.toLocaleString("pt-BR")} registros
+              </span>
+
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#6a6a6a",
+                  background: "#f7f7f7",
+                  border: "1px solid #ebebeb",
+                  borderRadius: "9999px",
+                  padding: "2px 10px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <Columns3 style={{ width: "11px", height: "11px" }} />
+                {Object.keys(dataset.column_structure || {}).length} colunas
+              </span>
+
+              <span style={{ fontSize: "12px", color: "#929292" }}>
+                ID: {dataset.id}
+              </span>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setIsUploadDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Carregar Mais Dados
-            </Button>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant={dataset.status === 'active' ? 'destructive' : 'default'}
-              onClick={handleToggleStatusClick}
-              disabled={isTogglingStatus}
+              size="sm"
+              onClick={() => setIsUploadDialogOpen(true)}
+              style={{
+                background: "#ff385c",
+                color: "#fff",
+                borderRadius: "8px",
+                border: "none",
+                fontSize: "13px",
+                fontWeight: 510,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                height: "34px",
+                padding: "0 14px",
+                transition: "background 150ms",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#e00b41")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#ff385c")}
             >
-              {dataset.status === 'active' ? (
+              <Upload style={{ width: "14px", height: "14px" }} />
+              Carregar Dados
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsConfirmDialogOpen(true)}
+              disabled={isTogglingStatus}
+              style={
+                dataset.status === "active"
+                  ? {
+                      background: "rgba(193,53,21,0.04)",
+                      border: "1px solid rgba(193,53,21,0.25)",
+                      color: "#c13515",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      height: "34px",
+                      padding: "0 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }
+                  : {
+                      background: "rgba(39,166,68,0.04)",
+                      border: "1px solid rgba(39,166,68,0.25)",
+                      color: "#27a644",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      height: "34px",
+                      padding: "0 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }
+              }
+            >
+              {dataset.status === "active" ? (
                 <>
-                  <Archive className="h-4 w-4 mr-2" />
-                  {isTogglingStatus ? 'Arquivando...' : 'Arquivar'}
+                  <Archive style={{ width: "14px", height: "14px" }} />
+                  {isTogglingStatus ? "Arquivando..." : "Arquivar"}
                 </>
               ) : (
                 <>
-                  <ArchiveRestore className="h-4 w-4 mr-2" />
-                  {isTogglingStatus ? 'Ativando...' : 'Ativar'}
+                  <ArchiveRestore style={{ width: "14px", height: "14px" }} />
+                  {isTogglingStatus ? "Ativando..." : "Ativar"}
                 </>
               )}
             </Button>
+
             <Button
+              size="sm"
               variant="outline"
-              onClick={handleRefresh}
+              onClick={() => { setIsRefreshing(true); loadDataset() }}
               disabled={isRefreshing}
+              style={{
+                ...btnOutline,
+                height: "34px",
+                padding: "0 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+              <RefreshCw
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  animation: isRefreshing ? "spin 0.8s linear infinite" : "none",
+                }}
+              />
+              {isRefreshing ? "Atualizando..." : "Atualizar"}
             </Button>
-            <Button variant="outline" onClick={() => window.close()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.close()}
+              style={{
+                ...btnOutline,
+                height: "34px",
+                padding: "0 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <ArrowLeft style={{ width: "14px", height: "14px" }} />
               Fechar
             </Button>
           </div>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Gerais</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">Total de Registros</p>
-                <div className="flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-gray-400" />
-                  <p className="text-lg font-semibold">{dataset.record_count.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">Total de Colunas</p>
-                <div className="flex items-center gap-2">
-                  <Columns3 className="h-4 w-4 text-gray-400" />
-                  <p className="text-lg font-semibold">{Object.keys(dataset.column_structure || {}).length}</p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">Última Atualização</p>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <p className="text-lg font-semibold">
-                    {new Date(dataset.updated_at).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">Data de Criação</p>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <p className="text-lg font-semibold">
-                    {new Date(dataset.created_at).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500">Status</p>
-                <Badge className={getStatusColor(dataset.status)}>
-                  {getStatusLabel(dataset.status)}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Prévia dos Dados (primeiras linhas)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {dataPreview.length === 0 ? (
-              <div className="text-center py-8">
-                <Database className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">Nenhum dado disponível</p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">#</TableHead>
-                        {Object.keys(dataPreview[0]).map((key) => (
-                          <TableHead key={key} className="font-semibold">
-                            {key}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dataPreview.map((row: Record<string, string | number | boolean>, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium text-gray-400">{index + 1}</TableCell>
-                          {Object.values(row).map((value: string | number | boolean | null | undefined, i: number) => (
-                            <TableCell key={i}>
-                              {value !== null && value !== undefined ? String(value) : '-'}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <p className="text-sm text-gray-500 mt-4">
-                  Mostrando {dataPreview.length} de {dataset.record_count.toLocaleString()} registros
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
+      {/* ── Content ── */}
+      <div style={{ padding: "24px 32px 32px", display: "flex", flexDirection: "column", gap: "20px" }}>
+
+        {/* Info cards */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #dddddd",
+          borderRadius: "14px",
+          padding: "20px 24px",
+        }}>
+          <p style={{ fontSize: "12px", fontWeight: 510, color: "#929292", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Informações Gerais
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+            <MetaCard label="Registros" icon={Hash} value={dataset.record_count.toLocaleString("pt-BR")} />
+            <MetaCard label="Colunas" icon={Columns3} value={Object.keys(dataset.column_structure || {}).length} />
+            <MetaCard label="Status" statusNode dataset={dataset} />
+            <MetaCard label="Última Atualização" icon={Calendar} value={new Date(dataset.updated_at).toLocaleDateString("pt-BR")} />
+            <MetaCard label="Data de Criação" icon={Calendar} value={new Date(dataset.created_at).toLocaleDateString("pt-BR")} />
+          </div>
+        </div>
+
+        {/* Data preview */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #dddddd",
+          borderRadius: "14px",
+          overflow: "hidden",
+        }}>
+          {/* Toolbar */}
+          <div
+            className="flex items-center justify-between"
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid #ebebeb",
+              background: "#f7f7f7",
+            }}
+          >
+            <div>
+              <p style={{ fontSize: "13px", fontWeight: 510, color: "#222222" }}>
+                Prévia dos Dados
+              </p>
+              <p style={{ fontSize: "12px", color: "#929292", marginTop: "1px" }}>
+                Primeiras linhas do dataset
+              </p>
+            </div>
+            {dataPreview.length > 0 && (
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#6a6a6a",
+                  background: "#f2f2f2",
+                  border: "1px solid #ebebeb",
+                  borderRadius: "9999px",
+                  padding: "2px 10px",
+                }}
+              >
+                {dataPreview.length} / {dataset.record_count.toLocaleString("pt-BR")} linhas
+              </span>
+            )}
+          </div>
+
+          {dataPreview.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center" style={{ padding: "48px 24px" }}>
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "10px",
+                  background: "#f7f7f7",
+                  marginBottom: "12px",
+                  display: "inline-flex",
+                }}
+              >
+                <Database style={{ width: "28px", height: "28px", color: "#929292" }} />
+              </div>
+              <p style={{ fontSize: "14px", fontWeight: 510, color: "#6a6a6a" }}>
+                Nenhum dado disponível para prévia
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow
+                    className="border-0 hover:bg-transparent"
+                    style={{ background: "#f7f7f7" }}
+                  >
+                    <TableHead
+                      className="py-2.5 px-4 border-0 w-12"
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 510,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: "#929292",
+                      }}
+                    >
+                      #
+                    </TableHead>
+                    {Object.keys(dataPreview[0]).map((key) => (
+                      <TableHead
+                        key={key}
+                        className="py-2.5 px-4 border-0"
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 510,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: "#929292",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {key}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dataPreview.map((row, index) => (
+                    <TableRow
+                      key={index}
+                      className="border-0 transition-colors duration-100"
+                      style={{ borderTop: "1px solid #ebebeb" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f7f7f7")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <TableCell
+                        className="py-2.5 px-4 border-0 font-mono"
+                        style={{ fontSize: "11px", color: "#929292" }}
+                      >
+                        {index + 1}
+                      </TableCell>
+                      {Object.values(row).map((value, i) => (
+                        <TableCell
+                          key={i}
+                          className="py-2.5 px-4 border-0"
+                          style={{
+                            fontSize: "12px",
+                            color: "#3f3f3f",
+                            maxWidth: "200px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {value !== null && value !== undefined
+                            ? String(value)
+                            : <span style={{ color: "#929292" }}>—</span>
+                          }
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Confirm toggle dialog ── */}
       <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {dataset?.status === 'active' ? 'Arquivar Dataset' : 'Ativar Dataset'}
+        <DialogContent
+          style={{
+            padding: "0",
+          }}
+        >
+          <DialogHeader style={{ padding: "24px 24px 20px", borderBottom: "1px solid #ebebeb" }}>
+            <DialogTitle
+              style={{
+                fontSize: "16px",
+                fontWeight: 590,
+                letterSpacing: "-0.24px",
+              }}
+            >
+              {dataset.status === "active" ? "Arquivar Dataset" : "Ativar Dataset"}
             </DialogTitle>
-            <DialogDescription>
-              {dataset?.status === 'active'
-                ? `Tem certeza que deseja arquivar o dataset "${dataset?.table_name}"? O dataset ficará inativo e não aparecerá nas listagens públicas.`
-                : `Tem certeza que deseja ativar o dataset "${dataset?.table_name}"? O dataset voltará a aparecer nas listagens públicas.`
+            <DialogDescription style={{ fontSize: "13px", marginTop: "6px" }}>
+              {dataset.status === "active"
+                ? `Tem certeza que deseja arquivar "${dataset.table_name}"? O dataset ficará inativo e não aparecerá nas listagens públicas.`
+                : `Tem certeza que deseja ativar "${dataset.table_name}"? O dataset voltará a aparecer nas listagens públicas.`
               }
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter
+            className="gap-2"
+            style={{ padding: "16px 24px", borderTop: "1px solid #ebebeb" }}
+          >
             <Button
-              type="button"
               variant="outline"
               onClick={() => setIsConfirmDialogOpen(false)}
+              style={{ ...btnOutline, height: "34px", fontSize: "13px" }}
             >
               Cancelar
             </Button>
             <Button
-              type="button"
-              variant={dataset?.status === 'active' ? 'destructive' : 'default'}
               onClick={handleConfirmToggleStatus}
+              style={
+                dataset.status === "active"
+                  ? {
+                      background: "rgba(193,53,21,0.06)",
+                      border: "1px solid rgba(193,53,21,0.25)",
+                      color: "#c13515",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      height: "34px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }
+                  : {
+                      background: "#ff385c",
+                      color: "#fff",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontSize: "13px",
+                      height: "34px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }
+              }
             >
-              {dataset?.status === 'active' ? (
-                <>
-                  <Archive className="h-4 w-4 mr-2" />
-                  Arquivar
-                </>
+              {dataset.status === "active" ? (
+                <><Archive style={{ width: "14px", height: "14px" }} />Arquivar</>
               ) : (
-                <>
-                  <ArchiveRestore className="h-4 w-4 mr-2" />
-                  Ativar
-                </>
+                <><ArchiveRestore style={{ width: "14px", height: "14px" }} />Ativar</>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* ── Upload dialog ── */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Carregar Mais Dados</DialogTitle>
-            <DialogDescription>
-              Faça upload de um arquivo para adicionar mais dados ao dataset &quot;{dataset.table_name}&quot;
+        <DialogContent
+          style={{
+            padding: "0",
+          }}
+        >
+          <DialogHeader style={{ padding: "24px 24px 20px", borderBottom: "1px solid #ebebeb" }}>
+            <DialogTitle
+              style={{
+                fontSize: "16px",
+                fontWeight: 590,
+                letterSpacing: "-0.24px",
+              }}
+            >
+              Carregar Mais Dados
+            </DialogTitle>
+            <DialogDescription style={{ fontSize: "13px", marginTop: "6px" }}>
+              Faça upload de um arquivo para adicionar dados ao dataset &quot;{dataset.table_name}&quot;
             </DialogDescription>
           </DialogHeader>
+
           <form onSubmit={handleUploadSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="upload-file">
-                  Selecione o Arquivo
-                  <span className="text-red-500 ml-1">*</span>
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <Label
+                  htmlFor="upload-file"
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 510,
+                    color: "#222222",
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Selecione o Arquivo{" "}
+                  <span style={{ color: "#c13515" }}>*</span>
                 </Label>
-                <div className="flex flex-col gap-2">
-                  <div className="relative">
-                    <Input
-                      id="upload-file"
-                      type="file"
-                      accept=".xls,.xlsx,.csv"
-                      onChange={handleFileChange}
-                      className="cursor-pointer"
-                      required
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Formatos aceitos: XLS, XLSX, CSV
-                  </p>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-md border border-blue-200">
-                      <Upload className="h-5 w-5 text-blue-600" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-blue-900 truncate">
-                          {selectedFile.name}
-                        </p>
-                        <p className="text-xs text-blue-700">
-                          {(selectedFile.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                        className="h-8 w-8 p-0 hover:bg-blue-100"
+                <Input
+                  id="upload-file"
+                  type="file"
+                  accept=".xls,.xlsx,.csv"
+                  onChange={handleFileChange}
+                  required
+                  style={{
+                    height: "34px",
+                    fontSize: "12px",
+                    background: "#ffffff",
+                    border: "1px solid #dddddd",
+                    borderRadius: "8px",
+                    color: "#3f3f3f",
+                    cursor: "pointer",
+                  }}
+                />
+                <p style={{ fontSize: "11px", color: "#929292", marginTop: "4px" }}>
+                  Formatos aceitos: XLS, XLSX, CSV
+                </p>
+
+                {selectedFile && (
+                  <div
+                    className="flex items-center gap-3 mt-3"
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      background: "rgba(255,56,92,0.04)",
+                      border: "1px solid rgba(255,56,92,0.15)",
+                    }}
+                  >
+                    <Upload style={{ width: "14px", height: "14px", color: "#ff385c", flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="truncate"
+                        style={{ fontSize: "13px", fontWeight: 510, color: "#222222" }}
                       >
-                        <X className="h-4 w-4 text-blue-600" />
-                      </Button>
+                        {selectedFile.name}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#929292" }}>
+                        {(selectedFile.size / 1024).toFixed(2)} KB
+                      </p>
                     </div>
-                  )}
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFile(null)}
+                      style={{
+                        padding: "4px",
+                        borderRadius: "4px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "#929292",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <X style={{ width: "13px", height: "13px" }} />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "8px",
+                  background: "rgba(245,158,11,0.04)",
+                  border: "1px solid rgba(245,158,11,0.15)",
+                }}
+              >
+                <h4 style={{ fontSize: "12px", fontWeight: 510, color: "#d97706", marginBottom: "6px" }}>
                   Informações:
                 </h4>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Os dados do arquivo serão adicionados ao dataset existente</li>
+                <ul style={{ fontSize: "12px", color: "#3f3f3f", display: "flex", flexDirection: "column", gap: "3px" }}>
+                  <li>• Os dados serão adicionados ao dataset existente</li>
                   <li>• Certifique-se de que as colunas correspondam ao formato atual</li>
                   <li>• Registros duplicados serão identificados automaticamente</li>
                 </ul>
               </div>
             </div>
-            <DialogFooter>
+
+            <DialogFooter
+              className="gap-2"
+              style={{ padding: "16px 24px", borderTop: "1px solid #ebebeb" }}
+            >
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleCancelUpload}
+                onClick={() => { setIsUploadDialogOpen(false); setSelectedFile(null) }}
                 disabled={isUploading}
+                style={{ ...btnOutline, height: "34px", fontSize: "13px" }}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isUploading}>
+              <Button
+                type="submit"
+                disabled={isUploading}
+                style={{
+                  background: "#ff385c",
+                  color: "#fff",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "13px",
+                  fontWeight: 510,
+                  height: "34px",
+                  padding: "0 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "background 150ms",
+                }}
+                onMouseEnter={e => { if (!isUploading) e.currentTarget.style.background = "#e00b41" }}
+                onMouseLeave={e => { if (!isUploading) e.currentTarget.style.background = "#ff385c" }}
+              >
                 {isUploading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <span
+                      style={{
+                        width: "14px",
+                        height: "14px",
+                        borderRadius: "50%",
+                        border: "2px solid rgba(255,255,255,0.3)",
+                        borderTopColor: "#fff",
+                        animation: "spin 0.8s linear infinite",
+                        flexShrink: 0,
+                      }}
+                    />
                     Carregando...
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload style={{ width: "14px", height: "14px" }} />
                     Carregar Arquivo
                   </>
                 )}

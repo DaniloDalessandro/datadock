@@ -7,7 +7,14 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        // Airbnb card spec: white, hairline border, 14px radius, flat by default
+        "bg-white text-[#222222] flex flex-col gap-6 rounded-[14px] border border-[#dddddd] py-6",
+        // Hover — show shadow (Airbnb single-tier shadow)
+        "transition-shadow duration-200",
+        "hover:shadow-[rgba(0,0,0,0.02)_0_0_0_1px,rgba(0,0,0,0.04)_0_2px_6px,rgba(0,0,0,0.1)_0_4px_8px]",
+        // Dark mode
+        "dark:bg-[#191a1b] dark:text-[#f7f8f8] dark:border-[rgba(255,255,255,0.08)]",
+        "dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.5)]",
         className
       )}
       {...props}
@@ -32,7 +39,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={cn("leading-none font-semibold text-[#222222] dark:text-[#f7f8f8]", className)}
       {...props}
     />
   )
@@ -42,7 +49,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-[#6a6a6a] dark:text-[#8a8f98] text-sm", className)}
       {...props}
     />
   )

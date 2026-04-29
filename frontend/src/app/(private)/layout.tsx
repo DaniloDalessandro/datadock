@@ -35,7 +35,12 @@ const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) =
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink href="/">Home</BreadcrumbLink>
+          <BreadcrumbLink
+            href="/dashboard"
+            className="text-sm transition-colors duration-150 text-[#929292] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
+          >
+            Dashboard
+          </BreadcrumbLink>
         </BreadcrumbItem>
         {pathSegments.map((segment, index) => {
           const href = `/${pathSegments.slice(0, index + 1).join("/")}`
@@ -43,12 +48,17 @@ const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) =
 
           return (
             <React.Fragment key={href}>
-              <BreadcrumbSeparator />
+              <BreadcrumbSeparator className="text-[#c1c1c1] dark:text-[#62666d]" />
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{capitalize(segment)}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-sm font-semibold text-[#222222] dark:text-[#d0d6e0]">
+                    {capitalize(segment)}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink href={href}>
+                  <BreadcrumbLink
+                    href={href}
+                    className="text-sm transition-colors duration-150 text-[#929292] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
+                  >
                     {capitalize(segment)}
                   </BreadcrumbLink>
                 )}
@@ -70,7 +80,7 @@ export default function Layout({
 }>) {
   const pathname = usePathname()
 
-  const pathSegments = useMemo(() => 
+  const pathSegments = useMemo(() =>
     pathname.split("/").filter((segment) => segment),
     [pathname]
   )
@@ -80,15 +90,26 @@ export default function Layout({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <SidebarTrigger className="-ml-1" />
+          {/* Header — white bg, hairline border-bottom, 80px height */}
+          <header
+            className="sticky top-0 z-20 flex shrink-0 items-center gap-2 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 bg-white dark:bg-[#0f1011] border-b border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]"
+            style={{ height: "80px" }}
+          >
+            <SidebarTrigger
+              className="-ml-1 transition-colors duration-150 text-[#6a6a6a] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
+            />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="mr-2 data-[orientation=vertical]:h-4 bg-[#dddddd] dark:bg-[rgba(255,255,255,0.08)]"
             />
             <MemoizedBreadcrumb pathSegments={pathSegments} />
           </header>
-          <main className="flex-1 p-4">{children}</main>
+          {/* Main content */}
+          <main
+            className="flex-1 p-4 bg-[#f7f7f7] dark:bg-[#08090a]"
+          >
+            {children}
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </AuthGuard>

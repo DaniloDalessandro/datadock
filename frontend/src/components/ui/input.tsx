@@ -8,9 +8,31 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        // Base — Airbnb text-input spec: h-14, hairline border, 8px radius
+        "w-full min-w-0 h-14",
+        "rounded-[8px]",
+        "border border-[#dddddd] bg-white",
+        "px-[12px] py-[14px]",
+        "text-[16px] leading-normal font-[400]",
+        "text-[#222222] placeholder:text-[#6a6a6a]",
+        "transition-[border-color] duration-150",
+        "outline-none",
+        // Focus — 2px ink border, no glow/ring
+        "focus-visible:border-[2px] focus-visible:border-[#222222]",
+        // Error state
+        "aria-invalid:border-[#c13515]",
+        // Disabled
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[#f7f7f7]",
+        // File input styling
+        "file:text-[#222222] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+        // Selection
+        "selection:bg-[#ff385c] selection:text-white",
+        // Dark mode
+        "dark:bg-[rgba(255,255,255,0.04)] dark:border-[rgba(255,255,255,0.10)] dark:text-[#f7f8f8]",
+        "dark:placeholder:text-[#62666d]",
+        "dark:focus-visible:border-[rgba(255,255,255,0.40)]",
+        "dark:aria-invalid:border-[#ef4444]",
+        "dark:disabled:bg-[rgba(255,255,255,0.02)]",
         className
       )}
       {...props}

@@ -5,28 +5,105 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  // Base — layout, typography, transitions, focus ring, disabled
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    "rounded-[8px]",
+    "text-[16px] leading-none",
+    "font-[500]",
+    "transition-all duration-150 ease-out",
+    "disabled:pointer-events-none",
+    "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0",
+    // Focus ring — Airbnb uses ink border, no glow
+    "outline-none",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#222222]",
+    "dark:focus-visible:outline-[#ff385c]",
+    // Invalid state
+    "aria-invalid:outline-[#c13515]/60",
+  ],
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        // Primary — Rausch red CTA
+        default: [
+          "bg-[#ff385c] text-white",
+          "hover:bg-[#e00b41]",
+          "active:bg-[#c00030]",
+          "disabled:bg-[#ffd1da] disabled:text-[#ff385c]/60",
+        ],
+
+        // Secondary — white bg, ink border
+        secondary: [
+          "bg-white text-[#222222]",
+          "border border-[#222222]",
+          "hover:bg-[#f7f7f7]",
+          "active:bg-[#f2f2f2]",
+          "dark:bg-[rgba(255,255,255,0.06)] dark:text-[#d0d6e0] dark:border-[rgba(255,255,255,0.15)]",
+          "dark:hover:bg-[rgba(255,255,255,0.10)] dark:hover:text-[#f7f8f8]",
+        ],
+
+        // Ghost / tertiary — transparent, ink text, underline on hover
+        ghost: [
+          "bg-transparent text-[#222222]",
+          "hover:bg-[#f7f7f7]",
+          "active:bg-[#f2f2f2]",
+          "dark:text-[#8a8f98] dark:hover:bg-[rgba(255,255,255,0.05)] dark:hover:text-[#f7f8f8]",
+        ],
+
+        // Outline — white bg, hairline border, ink text
+        outline: [
+          "bg-white text-[#222222]",
+          "border border-[#dddddd]",
+          "hover:border-[#c1c1c1] hover:bg-[#f7f7f7]",
+          "active:bg-[#f2f2f2]",
+          "dark:bg-[rgba(255,255,255,0.035)] dark:text-[#d0d6e0] dark:border-[rgba(255,255,255,0.08)]",
+          "dark:hover:bg-[rgba(255,255,255,0.06)] dark:hover:border-[rgba(255,255,255,0.15)] dark:hover:text-[#f7f8f8]",
+        ],
+
+        // Glass — for floating surfaces on colored backgrounds
+        glass: [
+          "bg-white/85 text-[#222222]",
+          "border border-[#dddddd] backdrop-blur-sm",
+          "hover:bg-white hover:border-[#c1c1c1]",
+          "dark:bg-[rgba(255,255,255,0.06)] dark:text-[#d0d6e0] dark:border-[rgba(255,255,255,0.08)]",
+          "dark:hover:bg-[rgba(255,255,255,0.10)] dark:hover:border-[rgba(255,255,255,0.14)] dark:hover:text-[#f7f8f8]",
+        ],
+
+        // Pill — Rausch, full radius
+        pill: [
+          "bg-[#ff385c] text-white rounded-full",
+          "text-[14px] font-[500]",
+          "hover:bg-[#e00b41]",
+          "active:bg-[#c00030]",
+          "disabled:bg-[#ffd1da]",
+        ],
+
+        // Destructive — red for danger actions
+        destructive: [
+          "bg-[rgba(193,53,21,0.08)] text-[#c13515]",
+          "border border-[rgba(193,53,21,0.25)]",
+          "hover:bg-[rgba(193,53,21,0.14)] hover:border-[rgba(193,53,21,0.40)]",
+          "active:bg-[rgba(193,53,21,0.20)]",
+          "focus-visible:outline-[#c13515]",
+          "dark:bg-[rgba(239,68,68,0.12)] dark:text-[#ef4444] dark:border-[rgba(239,68,68,0.25)]",
+          "dark:hover:bg-[rgba(239,68,68,0.20)]",
+        ],
+
+        // Text link
+        link: [
+          "bg-transparent text-[#ff385c]",
+          "hover:text-[#e00b41] hover:underline underline-offset-4",
+          "rounded-none",
+        ],
       },
+
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        sm:        "h-9 px-[14px] py-[8px] text-[14px]",
+        default:   "h-12 px-[24px] py-[14px] text-[16px]",
+        lg:        "h-14 px-[32px] py-[16px] text-[16px]",
+        icon:      "size-10 p-0",
+        "icon-sm": "size-8 p-0",
+        "icon-lg": "size-12 p-0",
       },
     },
     defaultVariants: {

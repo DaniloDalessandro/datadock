@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -31,8 +27,26 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1e40af',
+  themeColor: '#ff385c',
 };
+
+// Inline script to hydrate theme before first paint — prevents flash
+const themeScript = `
+(function() {
+  try {
+    var saved = localStorage.getItem('datadock-theme');
+    var mode = saved || 'light';
+    var resolved = mode === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : mode;
+    if (resolved === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch(e) {}
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -40,8 +54,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <head>
+        {/* Theme hydration — must run before paint to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
@@ -49,9 +65,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="DataDock" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         {children}
         <Toaster />
       </body>

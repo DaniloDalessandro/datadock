@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
   User,
   Mail,
   Lock,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
@@ -65,6 +65,7 @@ export function NavUser({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("light")
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -73,13 +74,31 @@ export function NavUser({
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
+  const applyTheme = (mode: "light" | "dark" | "system") => {
+    const root = document.documentElement
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+    const resolved = mode === "system" ? (systemPrefersDark ? "dark" : "light") : mode
+    root.classList.toggle("dark", resolved === "dark")
+  }
+
+  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+    setTheme(mode)
+    localStorage.setItem("datadock-theme", mode)
+    applyTheme(mode)
+  }
+
+  useEffect(() => {
+    const saved = (localStorage.getItem("datadock-theme") as "light" | "dark" | "system" | null) || "light"
+    setTheme(saved)
+    applyTheme(saved)
+  }, [])
+
   const handleLogout = () => {
     logout()
     router.push("/login")
   }
 
   const handleOpenAccountDialog = async () => {
-    // Fecha dropdown antes de abrir dialog para evitar conflito de z-index
     setIsDropdownOpen(false)
     await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -138,7 +157,6 @@ export function NavUser({
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
 
-        // TODO: Substituir reload por atualização reativa de estado
         window.location.reload()
       } else {
         const errorData = await response.json()
@@ -251,67 +269,122 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="bg-gray-100 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="transition-colors duration-150 hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+              style={{ background: "transparent" }}
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              {/* Avatar — Rausch bg, white initials */}
+              <Avatar className="h-8 w-8 rounded-lg flex-shrink-0">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">
+                <AvatarFallback
+                  className="rounded-lg text-xs font-medium"
+                  style={{
+                    background: "#ff385c",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                  }}
+                >
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">
+                <span className="truncate text-sm font-semibold text-[#222222] dark:text-[#f7f8f8]">
                   {capitalizeFirstLetter(user.name)}
                 </span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs text-[#6a6a6a] dark:text-[#8a8f98]">
+                  {user.email}
+                </span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <ChevronsUpDown className="ml-auto size-4 text-[#929292] dark:text-[#62666d]" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+
+          {/* Dropdown — white surface, hairline border, Airbnb shadow */}
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-gray-100"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-[14px] bg-white dark:bg-[#191a1b] border-[#dddddd] dark:border-[rgba(255,255,255,0.08)]"
+            style={{
+              boxShadow: "rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px, rgba(0,0,0,0.1) 0 4px 8px",
+            }}
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar className="h-8 w-8 rounded-lg flex-shrink-0">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">
+                  <AvatarFallback
+                    className="rounded-lg text-xs font-medium"
+                    style={{ background: "#ff385c", color: "#ffffff", fontWeight: 600 }}
+                  >
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
+                  <span className="truncate text-sm font-semibold text-[#222222] dark:text-[#f7f8f8]">
                     {capitalizeFirstLetter(user.name)}
                   </span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs text-[#6a6a6a] dark:text-[#8a8f98]">
+                    {user.email}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
 
+            <DropdownMenuSeparator className="bg-[#dddddd] dark:bg-[rgba(255,255,255,0.06)]" />
+
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={handleOpenAccountDialog} className="cursor-pointer">
-                <BadgeCheck />
+              <DropdownMenuItem
+                onClick={handleOpenAccountDialog}
+                className="cursor-pointer text-[#222222] dark:text-[#d0d6e0] hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+              >
+                <BadgeCheck className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
                 Minha conta
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleThemeChange("light")}
+                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+                style={{ color: theme === "light" ? "#ff385c" : "#222222" }}
+              >
+                <Sun className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                Tema: Claro
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleThemeChange("dark")}
+                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+                style={{ color: theme === "dark" ? "#ff385c" : "#222222" }}
+              >
+                <Moon className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                Tema: Escuro
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleThemeChange("system")}
+                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+                style={{ color: theme === "system" ? "#ff385c" : "#222222" }}
+              >
+                <Monitor className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                Tema: Sistema
               </DropdownMenuItem>
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-              <LogOut />
+            <DropdownMenuSeparator className="bg-[#dddddd] dark:bg-[rgba(255,255,255,0.06)]" />
+
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-[#222222] dark:text-[#d0d6e0] hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
+            >
+              <LogOut className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
 
+      {/* Account Dialog */}
       <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl">
-              <User className="w-6 h-6 text-blue-600" />
+            <DialogTitle className="flex items-center gap-2 text-2xl font-semibold">
+              <User className="w-6 h-6 text-[#ff385c]" />
               Minha Conta
             </DialogTitle>
             <DialogDescription>
@@ -320,67 +393,84 @@ export function NavUser({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
-              <Avatar className="h-20 w-20 rounded-xl">
+            {/* Profile header */}
+            <div className="flex items-center gap-4 p-4 rounded-[14px] bg-[#f7f7f7] border border-[#dddddd] dark:bg-[rgba(255,255,255,0.03)] dark:border-[rgba(255,255,255,0.06)]">
+              <Avatar className="h-20 w-20 rounded-[14px] flex-shrink-0">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-xl text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                <AvatarFallback
+                  className="rounded-[14px] text-2xl font-semibold"
+                  style={{
+                    background: "#ff385c",
+                    color: "#ffffff",
+                  }}
+                >
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-semibold text-lg text-gray-900">
+                <h3 className="font-semibold text-lg text-[#222222] dark:text-[#f7f8f8]">
                   {capitalizeFirstLetter(user.name)}
                 </h3>
-                <p className="text-sm text-gray-600">{user.email}</p>
+                <p className="text-sm text-[#6a6a6a] dark:text-[#8a8f98]">
+                  {user.email}
+                </p>
               </div>
             </div>
 
+            {/* Form fields */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
+                  <Label
+                    htmlFor="firstName"
+                    className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
+                  >
+                    <User className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
                     Nome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                    <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
                   ) : (
                     <Input
                       id="firstName"
                       placeholder="Digite seu nome"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="h-11"
                     />
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
+                  <Label
+                    htmlFor="lastName"
+                    className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
+                  >
+                    <User className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
                     Sobrenome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                    <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
                   ) : (
                     <Input
                       id="lastName"
                       placeholder="Digite seu sobrenome"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="h-11"
                     />
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="accountEmail" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
+                <Label
+                  htmlFor="accountEmail"
+                  className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
+                >
+                  <Mail className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
                   Email
                 </Label>
                 {isLoadingProfile ? (
-                  <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                  <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
                 ) : (
                   <Input
                     id="accountEmail"
@@ -388,21 +478,21 @@ export function NavUser({
                     placeholder="seu.email@exemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11"
                   />
                 )}
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Lock className="w-4 h-4" />
+            {/* Change password section */}
+            <div className="space-y-4 pt-4 border-t border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]">
+              <h3 className="text-sm flex items-center gap-2 font-semibold text-[#3f3f3f] dark:text-[#d0d6e0]">
+                <Lock className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
                 Alterar Senha
               </h3>
 
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="oldPassword" className="text-sm">
+                  <Label htmlFor="oldPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
                     Senha Atual
                   </Label>
                   <Input
@@ -411,12 +501,11 @@ export function NavUser({
                     placeholder="Digite sua senha atual"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-sm">
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
                     Nova Senha
                   </Label>
                   <Input
@@ -425,12 +514,11 @@ export function NavUser({
                     placeholder="Digite a nova senha (mín. 8 caracteres)"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
                     Confirmar Nova Senha
                   </Label>
                   <Input
@@ -439,20 +527,19 @@ export function NavUser({
                     placeholder="Digite novamente a nova senha"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-11"
                   />
                 </div>
 
                 <Button
                   type="button"
-                  onClick={handleChangePassword}
                   variant="outline"
-                  className="w-full h-11"
+                  onClick={handleChangePassword}
+                  className="w-full"
                   disabled={isSubmitting || !oldPassword || !newPassword || !confirmPassword}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#222222] dark:border-[#8a8f98] mr-2" />
                       Alterando...
                     </>
                   ) : (
@@ -465,25 +552,27 @@ export function NavUser({
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t">
+            {/* Action buttons */}
+            <div className="flex gap-3 pt-4 border-t border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCloseDialog}
-                className="flex-1 h-11"
+                className="flex-1"
                 disabled={isSubmitting}
               >
                 Cancelar
               </Button>
               <Button
                 type="button"
+                variant="default"
                 onClick={handleSaveAccount}
-                className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                className="flex-1"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                     Salvando...
                   </>
                 ) : (

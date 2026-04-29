@@ -3,7 +3,8 @@ Modelos para o assistente Alice com suporte a busca vetorial
 """
 
 from django.db import models
-from pgvector.django import VectorField
+
+from alice.fields import AdaptiveVectorField
 
 
 class DatasetEmbedding(models.Model):
@@ -21,8 +22,8 @@ class DatasetEmbedding(models.Model):
         verbose_name="Descrição",
         help_text="Descrição textual do dataset para geração de embedding",
     )
-    embedding = VectorField(
-        dimensions=768,  # Google Gemini models/embedding-001
+    embedding = AdaptiveVectorField(
+        dimensions=768,
         verbose_name="Embedding Vetorial",
     )
     metadata = models.JSONField(

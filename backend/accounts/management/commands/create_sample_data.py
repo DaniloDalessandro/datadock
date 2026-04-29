@@ -16,6 +16,16 @@ class Command(BaseCommand):
             help="Clear existing sample data before creating new data",
         )
 
+    def _ensure_user(self, username: str, password: str, defaults: dict):
+        user, created = CustomUser.objects.get_or_create(
+            username=username,
+            defaults=defaults,
+        )
+        if created:
+            user.set_password(password)
+            user.save()
+        return user, created
+
     def handle(self, *args, **options):
         if options["clear"]:
             self.stdout.write("Clearing existing sample data...")
@@ -53,8 +63,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"   [OK] {action}: {company2.name}")
 
                 self.stdout.write("\n2. Creating admin user...")
-                admin, created = CustomUser.objects.get_or_create(
+                admin, created = self._ensure_user(
                     username="demo_admin",
+                    password="admin123",
                     defaults={
                         "email": "admin@datadock.com",
                         "first_name": "Admin",
@@ -64,139 +75,151 @@ class Command(BaseCommand):
                         "is_superuser": True,
                     },
                 )
-                if created:
-                    admin.set_password("admin123")
-                    admin.save()
-                    InternalProfile.objects.create(
-                        user=admin,
-                        department="TI",
-                        position="Administrador do Sistema",
-                        employee_id="ADM001",
-                    )
-                    action = "Created"
-                else:
-                    action = "Found existing"
+                InternalProfile.objects.update_or_create(
+                    user=admin,
+                    defaults={
+                        "department": "TI",
+                        "position": "Administrador do Sistema",
+                        "employee_id": "ADM001",
+                    },
+                )
                 self.stdout.write(
-                    f"   [OK] {action}: {admin.username} (password: admin123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {admin.username} (password: admin123)"
                 )
 
                 self.stdout.write("\n3. Creating internal users...")
-
-                internal1 = CustomUser.objects.create_user(
+                internal1, created = self._ensure_user(
                     username="demo_joao",
-                    email="joao.silva@datadock.com",
                     password="joao123",
-                    first_name="João",
-                    last_name="Silva",
-                    cpf="123.456.789-00",
-                    phone="(11) 9999-8888",
-                    profile_type="interno",
-                    is_staff=True,
+                    defaults={
+                        "email": "joao.silva@datadock.com",
+                        "first_name": "Joao",
+                        "last_name": "Silva",
+                        "cpf": "123.456.789-00",
+                        "phone": "(11) 9999-8888",
+                        "profile_type": "interno",
+                        "is_staff": True,
+                    },
                 )
-                InternalProfile.objects.create(
+                InternalProfile.objects.update_or_create(
                     user=internal1,
-                    department="Operações",
-                    position="Supervisor",
-                    employee_id="OPE001",
+                    defaults={
+                        "department": "Operacoes",
+                        "position": "Supervisor",
+                        "employee_id": "OPE001",
+                    },
                 )
                 self.stdout.write(
-                    f"   [OK] Created: {internal1.username} (password: joao123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {internal1.username} (password: joao123)"
                 )
 
-                internal2 = CustomUser.objects.create_user(
+                internal2, created = self._ensure_user(
                     username="demo_maria",
-                    email="maria.santos@datadock.com",
                     password="maria123",
-                    first_name="Maria",
-                    last_name="Santos",
-                    cpf="987.654.321-00",
-                    phone="(11) 8888-7777",
-                    profile_type="interno",
-                    is_staff=True,
+                    defaults={
+                        "email": "maria.santos@datadock.com",
+                        "first_name": "Maria",
+                        "last_name": "Santos",
+                        "cpf": "987.654.321-00",
+                        "phone": "(11) 8888-7777",
+                        "profile_type": "interno",
+                        "is_staff": True,
+                    },
                 )
-                InternalProfile.objects.create(
+                InternalProfile.objects.update_or_create(
                     user=internal2,
-                    department="Financeiro",
-                    position="Analista",
-                    employee_id="FIN001",
+                    defaults={
+                        "department": "Financeiro",
+                        "position": "Analista",
+                        "employee_id": "FIN001",
+                    },
                 )
                 self.stdout.write(
-                    f"   [OK] Created: {internal2.username} (password: maria123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {internal2.username} (password: maria123)"
                 )
 
                 self.stdout.write("\n4. Creating external users...")
-
-                external1 = CustomUser.objects.create_user(
+                external1, created = self._ensure_user(
                     username="demo_operador",
-                    email="operador@operadora.com",
                     password="operador123",
-                    first_name="Carlos",
-                    last_name="Operador",
-                    cpf="111.222.333-44",
-                    phone="(11) 7777-6666",
-                    profile_type="externo",
+                    defaults={
+                        "email": "operador@operadora.com",
+                        "first_name": "Carlos",
+                        "last_name": "Operador",
+                        "cpf": "111.222.333-44",
+                        "phone": "(11) 7777-6666",
+                        "profile_type": "externo",
+                    },
                 )
-                ExternalProfile.objects.create(
+                ExternalProfile.objects.update_or_create(
                     user=external1,
-                    company_name=company1.name,
-                    external_type="operador",
-                    cnpj="12.345.678/0001-90",
-                    contact_person="Carlos Operador",
+                    defaults={
+                        "company_name": company1.name,
+                        "external_type": "operador",
+                        "cnpj": "12.345.678/0001-90",
+                        "contact_person": "Carlos Operador",
+                    },
                 )
                 external1.companies.add(company1)
                 self.stdout.write(
-                    f"   [OK] Created: {external1.username} (password: operador123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {external1.username} (password: operador123)"
                 )
 
-                external2 = CustomUser.objects.create_user(
+                external2, created = self._ensure_user(
                     username="demo_agencia",
-                    email="agencia@agencia.com",
                     password="agencia123",
-                    first_name="Ana",
-                    last_name="Agência",
-                    cpf="555.666.777-88",
-                    phone="(21) 6666-5555",
-                    profile_type="externo",
+                    defaults={
+                        "email": "agencia@agencia.com",
+                        "first_name": "Ana",
+                        "last_name": "Agencia",
+                        "cpf": "555.666.777-88",
+                        "phone": "(21) 6666-5555",
+                        "profile_type": "externo",
+                    },
                 )
-                ExternalProfile.objects.create(
+                ExternalProfile.objects.update_or_create(
                     user=external2,
-                    company_name=company2.name,
-                    external_type="agencia",
-                    cnpj="98.765.432/0001-10",
-                    contact_person="Ana Agência",
-                    notes="Representante da agência de navegação",
+                    defaults={
+                        "company_name": company2.name,
+                        "external_type": "agencia",
+                        "cnpj": "98.765.432/0001-10",
+                        "contact_person": "Ana Agencia",
+                        "notes": "Representante da agencia de navegacao",
+                    },
                 )
                 external2.companies.add(company2)
                 self.stdout.write(
-                    f"   [OK] Created: {external2.username} (password: agencia123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {external2.username} (password: agencia123)"
                 )
 
-                external3 = CustomUser.objects.create_user(
+                external3, created = self._ensure_user(
                     username="demo_cliente",
-                    email="cliente@cliente.com",
                     password="cliente123",
-                    first_name="Pedro",
-                    last_name="Cliente",
-                    cpf="999.888.777-66",
-                    phone="(11) 5555-4444",
-                    profile_type="externo",
+                    defaults={
+                        "email": "cliente@cliente.com",
+                        "first_name": "Pedro",
+                        "last_name": "Cliente",
+                        "cpf": "999.888.777-66",
+                        "phone": "(11) 5555-4444",
+                        "profile_type": "externo",
+                    },
                 )
-                ExternalProfile.objects.create(
+                ExternalProfile.objects.update_or_create(
                     user=external3,
-                    company_name="Demo Cliente Importador Ltda",
-                    external_type="cliente",
-                    cnpj="11.222.333/0001-44",
-                    contact_person="Pedro Cliente",
-                    notes="Cliente importador de produtos diversos",
+                    defaults={
+                        "company_name": "Demo Cliente Importador Ltda",
+                        "external_type": "cliente",
+                        "cnpj": "11.222.333/0001-44",
+                        "contact_person": "Pedro Cliente",
+                        "notes": "Cliente importador de produtos diversos",
+                    },
                 )
                 self.stdout.write(
-                    f"   [OK] Created: {external3.username} (password: cliente123)"
+                    f"   [OK] {'Created' if created else 'Found existing'}: {external3.username} (password: cliente123)"
                 )
 
                 self.stdout.write("\n" + "=" * 60)
-                self.stdout.write(
-                    self.style.SUCCESS("Sample data created successfully!")
-                )
+                self.stdout.write(self.style.SUCCESS("Sample data created successfully!"))
                 self.stdout.write("=" * 60)
                 self.stdout.write("\nSummary:")
                 self.stdout.write(
@@ -224,3 +247,4 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating sample data: {str(e)}"))
             raise
+

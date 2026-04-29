@@ -46,7 +46,8 @@ export function DataFlowAnimation() {
     window.addEventListener("resize", resizeCanvas)
 
     const animate = () => {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.1)"
+      // Clear with near-black — match #08090a
+      ctx.fillStyle = "rgba(8, 9, 10, 0.18)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       particles.forEach((particle) => {
@@ -58,7 +59,8 @@ export function DataFlowAnimation() {
         }
 
         ctx.beginPath()
-        ctx.fillStyle = `rgba(59, 130, 246, ${particle.opacity})`
+        // Use Linear brand indigo #5e6ad2 for particles
+        ctx.fillStyle = `rgba(94, 106, 210, ${particle.opacity})`
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
         ctx.fill()
       })
@@ -72,7 +74,7 @@ export function DataFlowAnimation() {
 
           if (distance < 100) {
             ctx.beginPath()
-            ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 * (1 - distance / 100)})`
+            ctx.strokeStyle = `rgba(94, 106, 210, ${0.08 * (1 - distance / 100)})`
             ctx.lineWidth = 0.5
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
@@ -94,7 +96,8 @@ export function DataFlowAnimation() {
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50" />
+      {/* Linear dark-mode background */}
+      <div className="absolute inset-0" style={{ background: "#08090a" }} />
       <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   )

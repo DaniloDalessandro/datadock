@@ -74,28 +74,77 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   return (
-    <Sidebar {...props}>
-      <SidebarHeader>
+    <Sidebar
+      {...props}
+      className="bg-white dark:bg-[#0f1011] border-r border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]"
+      style={
+        {
+          "--sidebar-width": "240px",
+          "--sidebar-width-icon": "52px",
+        } as React.CSSProperties
+      }
+    >
+      {/* Sidebar header — logo mark + wordmark */}
+      <SidebarHeader
+        className="p-4 border-b border-[#dddddd] dark:border-[rgba(255,255,255,0.06)] bg-white dark:bg-[#0f1011]"
+      >
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <Database className="size-4" />
+            <SidebarMenuButton
+              size="lg"
+              className="pointer-events-none select-none"
+              style={{ background: "transparent", padding: 0, height: "auto" }}
+            >
+              {/* Logo icon — Rausch tinted bg, red icon */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: "rgba(255,56,92,0.10)",
+                  border: "1px solid rgba(255,56,92,0.18)",
+                  flexShrink: 0,
+                }}
+              >
+                <Database style={{ width: 16, height: 16, color: "#ff385c" }} />
               </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">DataDock</span>
-                <span className="text-xs">Sistema de Gestão de Dados</span>
-              </div>
+
+              {/* Wordmark */}
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#222222",
+                  letterSpacing: "-0.24px",
+                  lineHeight: 1,
+                }}
+                className="dark:text-[#f7f8f8]"
+              >
+                DataDock
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+
+      {/* Navigation area */}
+      <SidebarContent
+        style={{ padding: "12px 8px" }}
+        className="bg-white dark:bg-[#0f1011]"
+      >
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter>
+
+      {/* Footer — user menu */}
+      <SidebarFooter
+        className="p-2 border-t border-[#dddddd] dark:border-[rgba(255,255,255,0.06)] bg-white dark:bg-[#0f1011]"
+      >
         <NavUser user={user} />
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )
