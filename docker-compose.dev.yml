@@ -103,7 +103,13 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    command: npm run dev
+    command: >
+      sh -c "
+        if [ ! -x /app/node_modules/.bin/next ]; then
+          npm ci;
+        fi &&
+        npm run dev
+      "
 
 volumes:
   postgres_dev_data:

@@ -661,36 +661,31 @@ class DownloadDataView(APIView):
 
 class PublicListDatasetsView(APIView):
     """
-    View pública para listar todos os datasets ativos (sem autenticação)
+    View pública para listar todos os datasets (sem autenticação)
     GET /api/data-import/public-datasets/
-    Cache de 10 minutos
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
-        """
-        Lista todos os datasets ativos
-        """
         try:
-            active_processes = (
+            processes = (
                 DataImportProcess.objects.select_related("created_by")
-                .filter(status="active")
                 .order_by("-created_at")
             )
 
-            serializer = DataImportProcessSerializer(active_processes, many=True)
+            serializer = DataImportProcessSerializer(processes, many=True)
 
             return Response(
                 {
                     "success": True,
-                    "count": active_processes.count(),
+                    "count": processes.count(),
                     "results": serializer.data,
                 }
             )
         except Exception as e:
             return Response(
-                {"success": False, "error": "Erro ao listar datasets: {str(e)}"},
+                {"success": False, "error": f"Erro ao listar datasets: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -795,7 +790,7 @@ class PublicDownloadDataView(APIView):
             logger.info("[DOWNLOAD] Iniciando download para dataset ID: {pk}")
             logger.info("=" * 60)
 
-            process = DataImportProcess.objects.get(pk=pk, status="active")
+            process = DataImportProcess.objects.get(pk=pk)
             all_columns = list(process.column_structure.keys())
 
             logger.info("[DOWNLOAD] Dataset: {process.table_name}")
@@ -1045,7 +1040,7 @@ class PublicDataPreviewView(APIView):
         Obtém todos os dados de um dataset ativo específico
         """
         try:
-            process = DataImportProcess.objects.get(pk=pk, status="active")
+            process = DataImportProcess.objects.get(pk=pk)
 
             safe_table_name = DataImportService.sanitize_column_name(process.table_name)
             columns = list(process.column_structure.keys())
@@ -1101,7 +1096,7 @@ class PublicColumnMetadataView(APIView):
         Obtém metadados de colunas para filtragem
         """
         try:
-            process = DataImportProcess.objects.get(pk=pk, status="active")
+            process = DataImportProcess.objects.get(pk=pk)
 
             safe_table_name = DataImportService.sanitize_column_name(process.table_name)
             column_structure = process.column_structure

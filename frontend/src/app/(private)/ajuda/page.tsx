@@ -1,32 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
-  HelpCircle, BookOpen, Search, ChevronRight,
-  PlayCircle, CheckCircle, Clock, AlertCircle, Lightbulb,
+  Search,
+  ChevronRight,
+  CheckCircle,
+  Clock,
+  Lightbulb,
 } from "lucide-react"
 import { tutorials, faqs } from "@/lib/help-content"
-
-function getLevelStyle(level: string): React.CSSProperties {
-  switch (level) {
-    case "Básico":
-      return { color: "#27a644", background: "rgba(39,166,68,0.08)", border: "1px solid rgba(39,166,68,0.20)", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px", fontWeight: 500 }
-    case "Intermediário":
-      return { color: "#d97706", background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.20)", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px", fontWeight: 500 }
-    case "Avançado":
-      return { color: "#c13515", background: "rgba(193,53,21,0.06)", border: "1px solid rgba(193,53,21,0.20)", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px", fontWeight: 500 }
-    default:
-      return { color: "#6a6a6a", background: "#f7f7f7", border: "1px solid #dddddd", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px", fontWeight: 500 }
-  }
-}
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  Todos:     <HelpCircle className="h-4 w-4" />,
-  Dashboard: <PlayCircle className="h-4 w-4" />,
-  Datasets:  <BookOpen className="h-4 w-4" />,
-  Alice:     <Lightbulb className="h-4 w-4" />,
-}
 
 export default function AjudaPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -36,330 +21,269 @@ export default function AjudaPage() {
 
   const categories = ["Todos", "Dashboard", "Datasets", "Alice"]
 
-  const filteredTutorials = tutorials.filter(t =>
-    (t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     t.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (selectedCategory === "Todos" || t.category === selectedCategory)
+  const filteredTutorials = tutorials.filter((tutorial) => {
+    const matchesSearch =
+      tutorial.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tutorial.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "Todos" || tutorial.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
+  const filteredFAQs = faqs.filter(
+    (faq) =>
+      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const filteredFAQs = faqs.filter(f =>
-    f.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.answer.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const getLevelVariant = (level: string): "success" | "warning" | "destructive" | "secondary" => {
+    switch (level) {
+      case "Básico": return "success"
+      case "Intermediário": return "warning"
+      case "Avançado": return "destructive"
+      default: return "secondary"
+    }
+  }
 
   return (
-    <div className="flex-1 min-h-screen" style={{ background: "#ffffff" }}>
+    <div className="flex flex-col">
+      {/* Header — parchment sub-nav */}
+      <section className="bg-[#f5f5f7] px-8 py-8 border-b border-[#e0e0e0]">
+        <h1 className="text-[34px] font-semibold text-[#1d1d1f] leading-[1.47] mb-1 tracking-[-0.374px]">
+          Central de Ajuda
+        </h1>
+        <p className="text-[#7a7a7a] text-[17px] leading-[1.47] tracking-[-0.374px] max-w-xl mb-6">
+          Tutoriais, perguntas frequentes e suporte para o DataDock
+        </p>
 
-      {/* ── Page Header ── */}
-      <div style={{ padding: "24px 32px 0" }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="mb-1" style={{ color: "#222222", fontSize: "24px", fontWeight: 510, letterSpacing: "-0.288px" }}>
-              Central de Ajuda
-            </h1>
-            <p className="text-sm" style={{ color: "#6a6a6a" }}>
-              Tutoriais, documentação e perguntas frequentes do DataDock
-            </p>
-          </div>
-
-          {/* Search */}
-          <div className="relative" style={{ width: 300 }}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "#929292" }} />
+        {/* Search + category filter */}
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#7a7a7a]" />
             <Input
-              placeholder="Pesquisar na documentação..."
+              variant="search"
+              placeholder="Buscar tutoriais, FAQ ou tópicos..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-9 text-sm"
-              style={{
-                background: "#ffffff",
-                border: "1px solid #dddddd",
-                borderRadius: "8px",
-                color: "#222222",
-                height: "36px",
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </div>
-
-        {/* Divider */}
-        <div style={{ borderBottom: "1px solid #ebebeb", marginBottom: 0 }} />
-      </div>
-
-      {/* ── Body: 2-column layout ── */}
-      <div className="flex gap-0" style={{ padding: "24px 32px", gap: 24 }}>
-
-        {/* ── Sidebar: categories ── */}
-        <aside className="hidden md:flex flex-col flex-shrink-0"
-          style={{
-            width: 220,
-            background: "#f7f7f7",
-            border: "1px solid #dddddd",
-            borderRadius: "14px",
-            padding: "8px",
-            height: "fit-content",
-            position: "sticky",
-            top: "24px",
-          }}>
-          <p className="text-[11px] uppercase tracking-wider mb-2 px-3 pt-1" style={{ color: "#929292", fontWeight: 510 }}>
-            Categorias
-          </p>
-          {categories.map(cat => {
-            const isActive = selectedCategory === cat
-            return (
+          <div className="flex gap-2 flex-wrap">
+            {categories.map((category) => (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-md transition-all duration-150"
-                style={isActive
-                  ? {
-                      background: "rgba(255,56,92,0.06)",
-                      color: "#ff385c",
-                      borderLeft: "2px solid #ff385c",
-                      paddingLeft: "10px",
-                      fontWeight: 510,
-                      fontSize: "13px",
-                    }
-                  : {
-                      color: "#6a6a6a",
-                      fontSize: "13px",
-                      fontWeight: 510,
-                      borderLeft: "2px solid transparent",
-                      paddingLeft: "10px",
-                    }
-                }
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = "#f2f2f2"; e.currentTarget.style.color = "#222222" } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6a6a6a" } }}
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`text-[14px] tracking-[-0.224px] px-[15px] py-[8px] rounded-[8px] transition-colors duration-150 ${
+                  selectedCategory === category
+                    ? "bg-[#0066cc] text-[#ffffff] font-semibold"
+                    : "bg-[#ffffff] text-[#1d1d1f] border border-[#e0e0e0] hover:border-[#0066cc] hover:text-[#0066cc]"
+                }`}
               >
-                <span style={{ color: isActive ? "#ff385c" : "#929292" }}>
-                  {CATEGORY_ICONS[cat]}
-                </span>
-                {cat}
-              </button>
-            )
-          })}
-
-          {/* Quick start box */}
-          <div className="mt-4 pt-4" style={{ borderTop: "1px solid #ebebeb" }}>
-            <p className="text-[11px] uppercase tracking-wider mb-2 px-1" style={{ color: "#929292", fontWeight: 510 }}>
-              Início Rápido
-            </p>
-            <ul className="space-y-1.5 text-xs px-1" style={{ color: "#6a6a6a" }}>
-              {[
-                "Faça login com suas credenciais",
-                "Explore o dashboard",
-                "Converse com a Alice",
-                "Gerencie seus datasets",
-              ].map((step, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <CheckCircle className="h-3 w-3 flex-shrink-0 mt-0.5" style={{ color: "#27a644" }} />
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-
-        {/* ── Main content area ── */}
-        <main className="flex-1 min-w-0 space-y-6">
-
-          {/* Mobile category pills */}
-          <div className="flex gap-2 flex-wrap md:hidden">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className="text-xs px-3 py-1.5 rounded-full transition-colors duration-150"
-                style={selectedCategory === cat
-                  ? { background: "#ff385c", color: "#fff", border: "1px solid #ff385c" }
-                  : { background: "#f7f7f7", color: "#6a6a6a", border: "1px solid #dddddd" }
-                }
-              >
-                {cat}
+                {category}
               </button>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* ── Tutorials section ── */}
-          <section>
-            <h2 className="flex items-center gap-2 mb-4"
-              style={{ color: "#222222", fontSize: "15px", fontWeight: 510 }}>
-              <BookOpen className="h-4 w-4" style={{ color: "#ff385c" }} />
-              Tutoriais por Módulo
-              {filteredTutorials.length > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full ml-1"
-                  style={{ background: "rgba(255,56,92,0.06)", border: "1px solid rgba(255,56,92,0.15)", color: "#ff385c" }}>
-                  {filteredTutorials.length}
-                </span>
-              )}
-            </h2>
+      {/* Content section */}
+      <section className="bg-[#ffffff] p-8 space-y-10">
+        {/* Quick start guide */}
+        <div>
+          <h2 className="text-[24px] font-bold text-[#1d1d1f] leading-[1.25] mb-6 tracking-[-0.02em]">
+            Guia de Início Rápido
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Card 1 — dark tile */}
+            <div className="bg-[#272729] rounded-[18px] p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle className="h-5 w-5 text-[#2997ff]" />
+                <h4 className="font-semibold text-[#ffffff] text-[17px] tracking-[-0.374px]">Primeiros Passos</h4>
+              </div>
+              <ul className="text-[17px] tracking-[-0.374px] leading-[1.47] text-[#cccccc] space-y-3">
+                {[
+                  "Faça login com suas credenciais fornecidas",
+                  "Explore o dashboard para visão geral do sistema",
+                  "Converse com a Alice para análise de dados",
+                  "Navegue pelo módulo de Datasets para gerenciar dados",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-[#2997ff] mt-0.5">—</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {/* Card 2 — parchment */}
+            <div className="bg-[#f5f5f7] border border-[#e0e0e0] rounded-[18px] p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Lightbulb className="h-5 w-5 text-[#0066cc]" />
+                <h4 className="font-semibold text-[#1d1d1f] text-[17px] tracking-[-0.374px]">Dicas Importantes</h4>
+              </div>
+              <ul className="text-[17px] tracking-[-0.374px] leading-[1.47] text-[#7a7a7a] space-y-3">
+                {[
+                  "Dados são salvos automaticamente",
+                  "Use filtros para encontrar informações rapidamente",
+                  "Mantenha sempre os dados atualizados",
+                  "Entre em contato com suporte quando necessário",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-[#0066cc] mt-0.5">—</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
 
-            <div className="space-y-1">
-              {filteredTutorials.map(tutorial => (
-                <div key={tutorial.id}
-                  className="transition-all duration-150"
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #dddddd",
-                    borderRadius: "14px",
-                    marginBottom: "4px",
-                  }}>
-                  {/* Accordion trigger */}
-                  <button
-                    className="w-full flex items-start justify-between gap-4 transition-colors duration-150"
-                    style={{ padding: "16px", borderRadius: expandedTutorial === tutorial.id ? "14px 14px 0 0" : "14px" }}
-                    onClick={() => setExpandedTutorial(expandedTutorial === tutorial.id ? null : tutorial.id)}
-                    onMouseEnter={e => (e.currentTarget.style.background = "#f7f7f7")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <div className="flex items-start gap-3 flex-1 text-left">
-                      <div className="p-2 rounded-lg flex-shrink-0 mt-0.5"
-                        style={{ background: "rgba(255,56,92,0.06)" }}>
-                        <tutorial.icon className="h-4 w-4" style={{ color: "#ff385c" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm mb-1" style={{ color: "#222222", fontWeight: 510 }}>
-                          {tutorial.title}
-                        </p>
-                        <p className="text-sm mb-2" style={{ color: "#6a6a6a" }}>
-                          {tutorial.description}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span style={getLevelStyle(tutorial.level)}>{tutorial.level}</span>
-                          <span className="flex items-center gap-1"
-                            style={{ color: "#929292", background: "#f7f7f7", border: "1px solid #ebebeb", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px" }}>
-                            <Clock className="h-3 w-3" />
-                            {tutorial.duration}
-                          </span>
-                          <span style={{ color: "#929292", background: "#f7f7f7", border: "1px solid #ebebeb", borderRadius: "9999px", padding: "2px 8px", fontSize: "11px" }}>
-                            {tutorial.category}
-                          </span>
+        {/* Tutorials */}
+        <div>
+          <h2 className="text-[24px] font-bold text-[#1d1d1f] leading-[1.25] mb-6 tracking-[-0.02em]">
+            Tutoriais por Módulo
+          </h2>
+
+          {filteredTutorials.length === 0 ? (
+            <div className="border border-[#e0e0e0] rounded-[18px] p-8 text-center">
+              <Search className="h-10 w-10 text-[#7a7a7a] mx-auto mb-4" />
+              <p className="text-[#7a7a7a]">Nenhum tutorial encontrado para sua pesquisa.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTutorials.map((tutorial) => (
+                <div
+                  key={tutorial.id}
+                  className={`border rounded-[18px] transition-colors duration-200 ${
+                    expandedTutorial === tutorial.id
+                      ? "border-[#000000]"
+                      : "border-[#e0e0e0] hover:border-[#000000]/30"
+                  }`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="w-8 h-8 bg-[#f5f5f7] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <tutorial.icon className="h-4 w-4 text-[#1d1d1f]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-[#1d1d1f] mb-1">{tutorial.title}</h3>
+                          <p className="text-sm text-[#7a7a7a] mb-3 leading-[1.43]">{tutorial.description}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant={getLevelVariant(tutorial.level)}>{tutorial.level}</Badge>
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {tutorial.duration}
+                            </Badge>
+                            <Badge variant="secondary">{tutorial.category}</Badge>
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setExpandedTutorial(expandedTutorial === tutorial.id ? null : tutorial.id)
+                        }
+                      >
+                        <ChevronRight
+                          className={`h-4 w-4 transition-transform ${
+                            expandedTutorial === tutorial.id ? "rotate-90" : ""
+                          }`}
+                        />
+                      </Button>
                     </div>
-                    <ChevronRight
-                      className={`h-4 w-4 flex-shrink-0 mt-0.5 transition-transform duration-200 ${expandedTutorial === tutorial.id ? "rotate-90" : ""}`}
-                      style={{ color: "#929292" }}
-                    />
-                  </button>
 
-                  {/* Accordion content */}
-                  {expandedTutorial === tutorial.id && (
-                    <div style={{ padding: "0 16px 16px", borderTop: "1px solid #ebebeb" }}>
-                      <h4 className="text-sm font-medium mt-4 mb-3" style={{ color: "#222222" }}>
-                        Passo a passo:
-                      </h4>
-                      <ol className="space-y-2.5">
-                        {tutorial.steps.map((step, i) => (
-                          <li key={i} className="flex gap-3 text-sm">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
-                              style={{ background: "rgba(255,56,92,0.08)", color: "#ff385c", border: "1px solid rgba(255,56,92,0.20)" }}>
-                              {i + 1}
-                            </span>
-                            <span className="leading-relaxed" style={{ color: "#3f3f3f" }}>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      {tutorial.tips && (
-                        <div className="mt-4 p-3 rounded-lg"
-                          style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
-                          <h5 className="text-sm font-medium mb-2 flex items-center gap-2" style={{ color: "#d97706" }}>
-                            <Lightbulb className="h-4 w-4" />
-                            Dicas úteis:
-                          </h5>
-                          <ul className="text-sm space-y-1.5" style={{ color: "#3f3f3f" }}>
-                            {tutorial.tips.map((tip, i) => (
-                              <li key={i} className="flex items-start gap-2">
-                                <span style={{ color: "#d97706", flexShrink: 0 }}>•</span>
-                                <span>{tip}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {expandedTutorial === tutorial.id && (
+                      <div className="mt-6 pt-6 border-t border-[#e0e0e0]">
+                        <h4 className="font-bold text-[#1d1d1f] mb-4 text-xs uppercase tracking-widest">
+                          Passo a passo
+                        </h4>
+                        <ol className="space-y-3">
+                          {tutorial.steps.map((step, index) => (
+                            <li key={index} className="flex gap-3 text-sm">
+                              <span className="flex-shrink-0 w-6 h-6 bg-[#0066cc] text-[#ffffff] rounded-full flex items-center justify-center text-xs font-semibold">
+                                {index + 1}
+                              </span>
+                              <span className="text-[#7a7a7a] pt-0.5 leading-[1.43]">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+
+                        {tutorial.tips && (
+                          <div className="mt-6 p-4 bg-[#f5f5f7] border border-[#e0e0e0] rounded-[18px]">
+                            <h5 className="font-semibold text-[14px] text-[#1d1d1f] mb-2 flex items-center gap-2 tracking-[-0.224px]">
+                              <Lightbulb className="h-4 w-4 text-[#0066cc]" />
+                              Dicas úteis
+                            </h5>
+                            <ul className="text-[14px] text-[#7a7a7a] space-y-1 tracking-[-0.224px]">
+                              {tutorial.tips.map((tip, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="text-[#0066cc] mt-0.5">—</span>
+                                  <span className="leading-[1.43]">{tip}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
-
-              {filteredTutorials.length === 0 && (
-                <div className="text-center py-12 rounded-xl"
-                  style={{ background: "#f7f7f7", border: "1px solid #ebebeb" }}>
-                  <Search className="h-8 w-8 mx-auto mb-3" style={{ color: "#929292" }} />
-                  <p className="text-sm" style={{ color: "#6a6a6a" }}>
-                    Nenhum tutorial encontrado para &ldquo;{searchTerm}&rdquo;
-                  </p>
-                </div>
-              )}
             </div>
-          </section>
+          )}
+        </div>
 
-          {/* ── FAQ section ── */}
-          <section>
-            <h2 className="flex items-center gap-2 mb-4"
-              style={{ color: "#222222", fontSize: "15px", fontWeight: 510 }}>
-              <AlertCircle className="h-4 w-4" style={{ color: "#ff385c" }} />
-              Perguntas Frequentes
-              {filteredFAQs.length > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full ml-1"
-                  style={{ background: "rgba(255,56,92,0.06)", border: "1px solid rgba(255,56,92,0.15)", color: "#ff385c" }}>
-                  {filteredFAQs.length}
-                </span>
-              )}
-            </h2>
+        {/* FAQ section */}
+        <div>
+          <h2 className="text-[24px] font-bold text-[#1d1d1f] leading-[1.25] mb-6 tracking-[-0.02em]">
+            Perguntas Frequentes
+          </h2>
 
-            <div className="grid md:grid-cols-2 gap-1">
+          {filteredFAQs.length === 0 ? (
+            <div className="border border-[#e0e0e0] rounded-[18px] p-8 text-center">
+              <Search className="h-10 w-10 text-[#7a7a7a] mx-auto mb-4" />
+              <p className="text-[#7a7a7a]">Nenhuma pergunta encontrada para sua pesquisa.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-3">
               {filteredFAQs.map((faq, index) => (
-                <div key={index}
-                  className="transition-all duration-150"
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #dddddd",
-                    borderRadius: "14px",
-                  }}>
+                <div
+                  key={index}
+                  className={`border rounded-[18px] transition-colors duration-150 ${
+                    expandedFAQ === `faq-${index}`
+                      ? "border-[#000000] bg-[#f5f5f7]"
+                      : "border-[#e0e0e0] bg-[#ffffff] hover:border-[#000000]/30"
+                  }`}
+                >
                   <button
-                    className="w-full text-left transition-colors duration-150"
-                    style={{ padding: "16px", borderRadius: "14px" }}
-                    onClick={() => setExpandedFAQ(expandedFAQ === `faq-${index}` ? null : `faq-${index}`)}
-                    onMouseEnter={e => (e.currentTarget.style.background = "#f7f7f7")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    className="w-full text-left p-5"
+                    onClick={() =>
+                      setExpandedFAQ(expandedFAQ === `faq-${index}` ? null : `faq-${index}`)
+                    }
                   >
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-3">
                       <ChevronRight
-                        className={`h-4 w-4 mt-0.5 flex-shrink-0 transition-transform duration-200 ${expandedFAQ === `faq-${index}` ? "rotate-90" : ""}`}
-                        style={{ color: "#929292" }}
+                        className={`h-4 w-4 mt-0.5 flex-shrink-0 transition-transform text-[#1d1d1f] ${
+                          expandedFAQ === `faq-${index}` ? "rotate-90" : ""
+                        }`}
                       />
-                      <span className="text-sm font-medium" style={{ color: "#222222", fontWeight: 510 }}>
-                        {faq.question}
-                      </span>
+                      <span className="text-sm font-bold text-[#1d1d1f]">{faq.question}</span>
                     </div>
                   </button>
 
                   {expandedFAQ === `faq-${index}` && (
-                    <div className="px-4 pb-4 ml-6"
-                      style={{ borderTop: "1px solid #ebebeb", paddingTop: "12px", marginTop: "-1px" }}>
-                      <p className="text-sm leading-relaxed" style={{ color: "#6a6a6a", lineHeight: "1.7" }}>
-                        {faq.answer}
-                      </p>
-                      <span className="inline-block mt-3 text-[11px] px-2 py-0.5 rounded-full"
-                        style={{ color: "#929292", background: "#f7f7f7", border: "1px solid #ebebeb" }}>
+                    <div className="px-5 pb-5 ml-7">
+                      <p className="text-sm text-[#7a7a7a] mb-3 leading-[1.43]">{faq.answer}</p>
+                      <Badge variant="secondary" className="text-xs">
                         {faq.category}
-                      </span>
+                      </Badge>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-
-            {filteredFAQs.length === 0 && (
-              <div className="text-center py-12 rounded-xl"
-                style={{ background: "#f7f7f7", border: "1px solid #ebebeb" }}>
-                <Search className="h-8 w-8 mx-auto mb-3" style={{ color: "#929292" }} />
-                <p className="text-sm" style={{ color: "#6a6a6a" }}>Nenhuma pergunta encontrada.</p>
-              </div>
-            )}
-          </section>
-        </main>
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

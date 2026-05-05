@@ -16,13 +16,10 @@ export default function RootPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#08090a" }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#ffffff]">
       <div className="text-center">
-        <div
-          className="h-10 w-10 rounded-full border-2 border-t-transparent animate-spin mx-auto"
-          style={{ borderColor: "rgba(255,255,255,0.08)", borderTopColor: "#5e6ad2" }}
-        />
-        <p className="mt-4 text-sm" style={{ color: "#62666d" }}>Carregando...</p>
+        <div className="w-12 h-12 border-2 border-[#e6e6e6] border-t-[#000000] rounded-full animate-spin mx-auto" />
+        <p className="mt-4 text-[#6b6b6b] text-sm font-bold uppercase tracking-widest">Carregando...</p>
       </div>
     </div>
   )

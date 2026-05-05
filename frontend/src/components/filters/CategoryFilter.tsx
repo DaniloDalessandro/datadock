@@ -39,7 +39,7 @@ export function CategoryFilter({ value, options, onChange }: CategoryFilterProps
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+        <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#a0a0a0]" />
         <Input
           className="h-8 pl-7 text-xs"
           placeholder="Buscar..."
@@ -51,15 +51,15 @@ export function CategoryFilter({ value, options, onChange }: CategoryFilterProps
         <button
           type="button"
           onClick={selectAll}
-          className="text-blue-600 hover:underline"
+          className="text-[#000000] font-bold hover:underline underline-offset-4 transition-colors"
         >
           Selecionar todos
         </button>
-        <span className="text-gray-300">|</span>
+        <span className="text-[#e6e6e6]">|</span>
         <button
           type="button"
           onClick={clearAll}
-          className="text-blue-600 hover:underline"
+          className="text-[#000000] font-bold hover:underline underline-offset-4 transition-colors"
         >
           Limpar
         </button>
@@ -67,7 +67,7 @@ export function CategoryFilter({ value, options, onChange }: CategoryFilterProps
       <ScrollArea className="h-[150px]">
         <div className="space-y-2">
           {filteredOptions.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-2">
+            <p className="text-xs text-[#6b6b6b] text-center py-2">
               Nenhuma opção encontrada
             </p>
           ) : (
@@ -90,7 +90,7 @@ export function CategoryFilter({ value, options, onChange }: CategoryFilterProps
         </div>
       </ScrollArea>
       {value.length > 0 && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-[#6b6b6b]">
           {value.length} selecionado{value.length > 1 ? "s" : ""}
         </p>
       )}

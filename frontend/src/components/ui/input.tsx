@@ -1,43 +1,27 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
-    <input
-      type={type}
-      data-slot="input"
-      className={cn(
-        // Base — Airbnb text-input spec: h-14, hairline border, 8px radius
-        "w-full min-w-0 h-14",
-        "rounded-[8px]",
-        "border border-[#dddddd] bg-white",
-        "px-[12px] py-[14px]",
-        "text-[16px] leading-normal font-[400]",
-        "text-[#222222] placeholder:text-[#6a6a6a]",
-        "transition-[border-color] duration-150",
-        "outline-none",
-        // Focus — 2px ink border, no glow/ring
-        "focus-visible:border-[2px] focus-visible:border-[#222222]",
-        // Error state
-        "aria-invalid:border-[#c13515]",
-        // Disabled
-        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[#f7f7f7]",
-        // File input styling
-        "file:text-[#222222] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
-        // Selection
-        "selection:bg-[#ff385c] selection:text-white",
-        // Dark mode
-        "dark:bg-[rgba(255,255,255,0.04)] dark:border-[rgba(255,255,255,0.10)] dark:text-[#f7f8f8]",
-        "dark:placeholder:text-[#62666d]",
-        "dark:focus-visible:border-[rgba(255,255,255,0.40)]",
-        "dark:aria-invalid:border-[#ef4444]",
-        "dark:disabled:bg-[rgba(255,255,255,0.02)]",
-        className
-      )}
-      {...props}
-    />
-  )
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  variant?: "default" | "search" | "error"
 }
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, variant = "default", ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-[44px] w-full bg-[#ffffff] px-[14px] py-[12px] text-[17px] font-normal text-[#1d1d1f] tracking-[-0.374px] border border-[#e0e0e0] rounded-[8px] transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#7a7a7a] focus:outline-none focus:border-[#0066cc] focus:border-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[#f5f5f7] leading-[1.47]",
+          variant === "search" && "rounded-full bg-[#ffffff] border border-[rgba(0,0,0,0.08)] focus:border-[#0066cc] pl-10",
+          variant === "error" && "border-[#cc0000] focus:border-[#cc0000]",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
 
 export { Input }

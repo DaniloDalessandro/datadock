@@ -1,77 +1,42 @@
 "use client"
 
 import { AppSidebar } from "@/components/layout/sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 import React, { memo, useMemo } from "react"
 import { AuthGuard } from "@/components/auth"
+import Link from "next/link"
 
 const capitalize = (s: string) => {
-  if (typeof s !== "string" || s.length === 0) {
-    return ""
-  }
-  const decodedString = decodeURIComponent(s)
-  return (
-    decodedString.charAt(0).toUpperCase() +
-    decodedString.slice(1).replace(/-/g, " ")
-  )
+  if (typeof s !== "string" || s.length === 0) return ""
+  return decodeURIComponent(s).charAt(0).toUpperCase() + decodeURIComponent(s).slice(1).replace(/-/g, " ")
 }
 
-const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => {
-  return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink
-            href="/dashboard"
-            className="text-sm transition-colors duration-150 text-[#929292] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
-          >
-            Dashboard
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        {pathSegments.map((segment, index) => {
-          const href = `/${pathSegments.slice(0, index + 1).join("/")}`
-          const isLast = index === pathSegments.length - 1
-
-          return (
-            <React.Fragment key={href}>
-              <BreadcrumbSeparator className="text-[#c1c1c1] dark:text-[#62666d]" />
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage className="text-sm font-semibold text-[#222222] dark:text-[#d0d6e0]">
-                    {capitalize(segment)}
-                  </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink
-                    href={href}
-                    className="text-sm transition-colors duration-150 text-[#929292] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
-                  >
-                    {capitalize(segment)}
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </React.Fragment>
-          )
-        })}
-      </BreadcrumbList>
-    </Breadcrumb>
-  )
-})
-
-MemoizedBreadcrumb.displayName = "MemoizedBreadcrumb"
+const Breadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => (
+  <nav className="flex items-center gap-1 text-[14px] tracking-[-0.224px]">
+    <Link href="/" className="text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+      Home
+    </Link>
+    {pathSegments.map((segment, index) => {
+      const href = `/${pathSegments.slice(0, index + 1).join("/")}`
+      const isLast = index === pathSegments.length - 1
+      return (
+        <React.Fragment key={href}>
+          <span className="text-[#7a7a7a] mx-1">›</span>
+          {isLast ? (
+            <span className="text-[#1d1d1f] font-semibold">{capitalize(segment)}</span>
+          ) : (
+            <Link href={href} className="text-[#7a7a7a] hover:text-[#1d1d1f] transition-colors">
+              {capitalize(segment)}
+            </Link>
+          )}
+        </React.Fragment>
+      )
+    })}
+  </nav>
+))
+Breadcrumb.displayName = "Breadcrumb"
 
 export default function Layout({
   children,
@@ -79,35 +44,19 @@ export default function Layout({
   children: React.ReactNode
 }>) {
   const pathname = usePathname()
-
-  const pathSegments = useMemo(() =>
-    pathname.split("/").filter((segment) => segment),
-    [pathname]
-  )
+  const pathSegments = useMemo(() => pathname.split("/").filter(Boolean), [pathname])
 
   return (
     <AuthGuard>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset className="flex flex-col">
-          {/* Header — white bg, hairline border-bottom, 80px height */}
-          <header
-            className="sticky top-0 z-20 flex shrink-0 items-center gap-2 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 bg-white dark:bg-[#0f1011] border-b border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]"
-            style={{ height: "80px" }}
-          >
-            <SidebarTrigger
-              className="-ml-1 transition-colors duration-150 text-[#6a6a6a] hover:text-[#222222] dark:text-[#62666d] dark:hover:text-[#d0d6e0]"
-            />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4 bg-[#dddddd] dark:bg-[rgba(255,255,255,0.08)]"
-            />
-            <MemoizedBreadcrumb pathSegments={pathSegments} />
+        <SidebarInset className="flex flex-col bg-[#ffffff]">
+          <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[#e0e0e0] bg-[#f5f5f7] px-4">
+            <SidebarTrigger className="text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-[6px]" />
+            <Separator orientation="vertical" className="h-4 bg-[#e0e0e0]" />
+            <Breadcrumb pathSegments={pathSegments} />
           </header>
-          {/* Main content */}
-          <main
-            className="flex-1 p-4 bg-[#f7f7f7] dark:bg-[#08090a]"
-          >
+          <main className="flex-1 overflow-auto">
             {children}
           </main>
         </SidebarInset>

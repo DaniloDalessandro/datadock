@@ -64,7 +64,6 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
     setUploadStatus("Preparando upload...")
 
     try {
-      // Simula progresso visual até 90% enquanto aguarda resposta real
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -91,7 +90,7 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
       await new Promise(resolve => setTimeout(resolve, 500))
 
       handleCancel()
-    } catch (error) {
+    } catch {
       setUploadStatus("Erro ao fazer upload")
     } finally {
       setIsSubmitting(false)
@@ -110,28 +109,28 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] rounded-[18px] border-[#e0e0e0]">
         <DialogHeader>
-          <DialogTitle>Adicionar Novo Dataset</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-[#000000] font-bold">Adicionar Novo Dataset</DialogTitle>
+          <DialogDescription className="text-[#7a7a7a]">
             Preencha os dados do dataset e faça upload do arquivo
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           {isSubmitting && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4 space-y-4">
+            <div className="border border-[#e0e0e0] bg-[#f5f5f7] rounded-[16px] p-6 mb-4 space-y-4">
               <div className="flex items-center gap-3">
-                <Loader2 className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0" />
+                <Loader2 className="h-5 w-5 text-[#000000] animate-spin flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-blue-900">{uploadStatus}</p>
-                  <p className="text-xs text-blue-700 mt-1">
+                  <p className="text-sm font-bold text-[#000000]">{uploadStatus}</p>
+                  <p className="text-xs text-[#7a7a7a] mt-1">
                     Processando dados... Isso pode levar alguns instantes
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <Progress value={uploadProgress} className="h-3" />
-                <p className="text-xs text-blue-600 text-right font-medium">
+                <Progress value={uploadProgress} className="h-2" />
+                <p className="text-xs text-[#7a7a7a] text-right font-bold">
                   {uploadProgress}%
                 </p>
               </div>
@@ -140,9 +139,9 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">
+              <Label htmlFor="name" className="text-[#000000] font-bold text-xs uppercase tracking-widest">
                 Nome do Dataset
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-[#cc0000] ml-1">*</span>
               </Label>
               <Input
                 id="name"
@@ -153,15 +152,15 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
                 required
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[#a0a0a0]">
                 {datasetName.length}/80 caracteres
               </p>
             </div>
 
             <div className="grid gap-2">
-              <Label>
+              <Label className="text-[#000000] font-bold text-xs uppercase tracking-widest">
                 Tipo de Importação
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-[#cc0000] ml-1">*</span>
               </Label>
               <RadioGroup
                 value={importType}
@@ -185,9 +184,9 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
 
             {importType === "endpoint" && (
               <div className="grid gap-2">
-                <Label htmlFor="endpoint">
+                <Label htmlFor="endpoint" className="text-[#000000] font-bold text-xs uppercase tracking-widest">
                   Endpoint (URL)
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-[#cc0000] ml-1">*</span>
                 </Label>
                 <Input
                   id="endpoint"
@@ -198,7 +197,7 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
                   required={importType === "endpoint"}
                   disabled={isSubmitting}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[#a0a0a0]">
                   URL da API ou fonte de dados
                 </p>
               </div>
@@ -206,29 +205,27 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
 
             {importType === "file" && (
               <div className="grid gap-2">
-                <Label htmlFor="file">
+                <Label htmlFor="file" className="text-[#000000] font-bold text-xs uppercase tracking-widest">
                   Arquivo
-                  <span className="text-red-500 ml-1">*</span>
+                  <span className="text-[#cc0000] ml-1">*</span>
                 </Label>
                 <div className="flex flex-col gap-2">
-                  <div className="relative">
-                    <Input
-                      id="file"
-                      type="file"
-                      accept=".xls,.xlsx,.csv"
-                      onChange={handleFileChange}
-                      className="cursor-pointer"
-                      required={importType === "file" && !selectedFile}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
+                  <Input
+                    id="file"
+                    type="file"
+                    accept=".xls,.xlsx,.csv"
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                    required={importType === "file" && !selectedFile}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-[#a0a0a0]">
                     Formatos aceitos: XLS, XLSX, CSV
                   </p>
                   {selectedFile && (
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
-                      <Upload className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm text-blue-900 flex-1">
+                    <div className="flex items-center gap-2 p-2 border border-[#e0e0e0] bg-[#f5f5f7] rounded-[8px]">
+                      <Upload className="h-4 w-4 text-[#000000]" />
+                      <span className="text-sm text-[#000000] font-bold flex-1">
                         {selectedFile.name}
                       </span>
                       <Button
@@ -249,7 +246,7 @@ export default function DatasetDialog({ isOpen, onClose, onSubmit }: DatasetDial
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={handleCancel}
               disabled={isSubmitting}
             >

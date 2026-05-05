@@ -176,20 +176,22 @@ export function ColumnFilterPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`p-1 rounded hover:bg-gray-200 transition-colors ${
-            isActive ? "text-blue-600 bg-blue-100" : "text-gray-400"
+          className={`p-1 rounded transition-colors ${
+            isActive
+              ? "text-[#0066cc] bg-[#f5f5f7]"
+              : "text-[#a0a0a0] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
           }`}
         >
           <Filter className="h-3 w-3" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="start">
+      <PopoverContent className="w-64 p-3 rounded-[16px] border-[#e6e6e6]" align="start">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Filtrar: {column}</h4>
+            <h4 className="text-sm font-bold text-[#000000]">Filtrar: {column}</h4>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 rounded hover:bg-gray-100"
+              className="p-1 rounded-full hover:bg-[#f7f7f5] transition-colors"
             >
               <X className="h-3 w-3" />
             </button>
@@ -197,10 +199,10 @@ export function ColumnFilterPopover({
 
           {renderFilter()}
 
-          <div className="flex gap-2 pt-2 border-t">
+          <div className="flex gap-2 pt-2 border-t border-[#e6e6e6]">
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               className="flex-1 h-7 text-xs"
               onClick={handleClear}
             >
@@ -208,7 +210,7 @@ export function ColumnFilterPopover({
             </Button>
             <Button
               size="sm"
-              className="flex-1 h-7 text-xs bg-black hover:bg-gray-800"
+              className="flex-1 h-7 text-xs"
               onClick={handleApply}
             >
               Aplicar

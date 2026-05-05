@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   BadgeCheck,
   ChevronsUpDown,
@@ -8,9 +8,6 @@ import {
   User,
   Mail,
   Lock,
-  Sun,
-  Moon,
-  Monitor,
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
@@ -65,7 +62,6 @@ export function NavUser({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("light")
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -73,25 +69,6 @@ export function NavUser({
   const [oldPassword, setOldPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-
-  const applyTheme = (mode: "light" | "dark" | "system") => {
-    const root = document.documentElement
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    const resolved = mode === "system" ? (systemPrefersDark ? "dark" : "light") : mode
-    root.classList.toggle("dark", resolved === "dark")
-  }
-
-  const handleThemeChange = (mode: "light" | "dark" | "system") => {
-    setTheme(mode)
-    localStorage.setItem("datadock-theme", mode)
-    applyTheme(mode)
-  }
-
-  useEffect(() => {
-    const saved = (localStorage.getItem("datadock-theme") as "light" | "dark" | "system" | null) || "light"
-    setTheme(saved)
-    applyTheme(saved)
-  }, [])
 
   const handleLogout = () => {
     logout()
@@ -111,7 +88,6 @@ export function NavUser({
       if (response.ok) {
         const data = await response.json()
         const userData = data.user || data
-
         setFirstName(userData.first_name || "")
         setLastName(userData.last_name || "")
         setEmail(userData.email || "")
@@ -136,27 +112,18 @@ export function NavUser({
     try {
       const response = await fetch(`${config.apiUrl}/api/auth/profile/`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-          email: email,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ first_name: firstName, last_name: lastName, email }),
       })
 
       if (response.ok) {
         const data = await response.json()
-
         const updatedUser = data.user || data
         localStorage.setItem("user_first_name", updatedUser.first_name || "")
         localStorage.setItem("user_last_name", updatedUser.last_name || "")
         localStorage.setItem("user_email", updatedUser.email || "")
-
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
-
         window.location.reload()
       } else {
         const errorData = await response.json()
@@ -175,12 +142,10 @@ export function NavUser({
       toast.error("Preencha todos os campos de senha")
       return
     }
-
     if (newPassword !== confirmPassword) {
       toast.error("As senhas não conferem")
       return
     }
-
     if (newPassword.length < 8) {
       toast.error("A nova senha deve ter pelo menos 8 caracteres")
       return
@@ -191,43 +156,28 @@ export function NavUser({
     try {
       const response = await fetch(`${config.apiUrl}/api/auth/password/change/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          old_password: oldPassword,
-          new_password: newPassword,
-          new_password_confirm: confirmPassword,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword, new_password_confirm: confirmPassword }),
       })
 
       if (response.ok) {
         const data = await response.json()
-
         if (data.tokens) {
           localStorage.setItem("access_token", data.tokens.access)
           localStorage.setItem("refresh", data.tokens.refresh)
         }
-
         toast.success("Senha alterada com sucesso!")
-
         setOldPassword("")
         setNewPassword("")
         setConfirmPassword("")
       } else {
         const errorData = await response.json()
-
         if (errorData.details) {
-          const errors = errorData.details
-          if (errors.old_password) {
-            toast.error("Senha atual incorreta")
-          } else if (errors.new_password_confirm) {
-            toast.error("As novas senhas não conferem")
-          } else if (errors.new_password) {
-            toast.error(errors.new_password[0] || "Senha inválida")
-          } else {
-            toast.error(errorData.error || "Erro ao alterar senha")
-          }
+          const errs = errorData.details
+          if (errs.old_password) toast.error("Senha atual incorreta")
+          else if (errs.new_password_confirm) toast.error("As novas senhas não conferem")
+          else if (errs.new_password) toast.error(errs.new_password[0] || "Senha inválida")
+          else toast.error(errorData.error || "Erro ao alterar senha")
         } else {
           toast.error(errorData.error || "Erro ao alterar senha")
         }
@@ -249,12 +199,8 @@ export function NavUser({
 
   const getInitials = (name: string) => {
     const words = name.trim().split(" ")
-    if (words.length === 1) {
-      return words[0][0].toUpperCase()
-    }
-    return (
-      words[0][0].toUpperCase() + words[words.length - 1][0].toUpperCase()
-    )
+    if (words.length === 1) return words[0][0].toUpperCase()
+    return words[0][0].toUpperCase() + words[words.length - 1][0].toUpperCase()
   }
 
   const capitalizeFirstLetter = (name: string) => {
@@ -269,315 +215,170 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="transition-colors duration-150 hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-              style={{ background: "transparent" }}
+              className="bg-[#f5f5f7] hover:bg-[#e8e8ed] data-[state=open]:bg-[#e8e8ed] text-[#1d1d1f] rounded-[8px]"
             >
-              {/* Avatar — Rausch bg, white initials */}
-              <Avatar className="h-8 w-8 rounded-lg flex-shrink-0">
+              <Avatar className="h-8 w-8 rounded-[6px]">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback
-                  className="rounded-lg text-xs font-medium"
-                  style={{
-                    background: "#ff385c",
-                    color: "#ffffff",
-                    fontWeight: 600,
-                  }}
-                >
+                <AvatarFallback className="rounded-[6px] bg-[#1d1d1f] text-[#ffffff] font-semibold text-sm">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate text-sm font-semibold text-[#222222] dark:text-[#f7f8f8]">
+                <span className="truncate font-semibold text-[#1d1d1f] tracking-[-0.374px]">
                   {capitalizeFirstLetter(user.name)}
                 </span>
-                <span className="truncate text-xs text-[#6a6a6a] dark:text-[#8a8f98]">
-                  {user.email}
-                </span>
+                <span className="truncate text-xs text-[#7a7a7a] tracking-[-0.224px]">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4 text-[#929292] dark:text-[#62666d]" />
+              <ChevronsUpDown className="ml-auto size-4 text-[#7a7a7a]" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-
-          {/* Dropdown — white surface, hairline border, Airbnb shadow */}
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-[14px] bg-white dark:bg-[#191a1b] border-[#dddddd] dark:border-[rgba(255,255,255,0.08)]"
-            style={{
-              boxShadow: "rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px, rgba(0,0,0,0.1) 0 4px 8px",
-            }}
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 bg-[#ffffff] border border-[#e0e0e0] rounded-[18px] shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg flex-shrink-0">
+                <Avatar className="h-8 w-8 rounded-[6px]">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback
-                    className="rounded-lg text-xs font-medium"
-                    style={{ background: "#ff385c", color: "#ffffff", fontWeight: 600 }}
-                  >
+                  <AvatarFallback className="rounded-[6px] bg-[#1d1d1f] text-[#ffffff] font-semibold text-sm">
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate text-sm font-semibold text-[#222222] dark:text-[#f7f8f8]">
+                  <span className="truncate font-semibold text-[#1d1d1f] tracking-[-0.374px]">
                     {capitalizeFirstLetter(user.name)}
                   </span>
-                  <span className="truncate text-xs text-[#6a6a6a] dark:text-[#8a8f98]">
-                    {user.email}
-                  </span>
+                  <span className="truncate text-xs text-[#7a7a7a] tracking-[-0.224px]">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
 
-            <DropdownMenuSeparator className="bg-[#dddddd] dark:bg-[rgba(255,255,255,0.06)]" />
-
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={handleOpenAccountDialog}
-                className="cursor-pointer text-[#222222] dark:text-[#d0d6e0] hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-              >
-                <BadgeCheck className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+              <DropdownMenuItem onClick={handleOpenAccountDialog} className="cursor-pointer text-[#1d1d1f] tracking-[-0.374px]">
+                <BadgeCheck />
                 Minha conta
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleThemeChange("light")}
-                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-                style={{ color: theme === "light" ? "#ff385c" : "#222222" }}
-              >
-                <Sun className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
-                Tema: Claro
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleThemeChange("dark")}
-                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-                style={{ color: theme === "dark" ? "#ff385c" : "#222222" }}
-              >
-                <Moon className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
-                Tema: Escuro
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleThemeChange("system")}
-                className="cursor-pointer hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-                style={{ color: theme === "system" ? "#ff385c" : "#222222" }}
-              >
-                <Monitor className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
-                Tema: Sistema
               </DropdownMenuItem>
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator className="bg-[#dddddd] dark:bg-[rgba(255,255,255,0.06)]" />
-
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="cursor-pointer text-[#222222] dark:text-[#d0d6e0] hover:bg-[#f7f7f7] dark:hover:bg-[rgba(255,255,255,0.05)]"
-            >
-              <LogOut className="mr-2 h-4 w-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+            <DropdownMenuSeparator className="bg-[#e0e0e0]" />
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-[#cc0000] tracking-[-0.374px]">
+              <LogOut />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
 
-      {/* Account Dialog */}
       <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] rounded-[18px] border-[#e0e0e0]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl font-semibold">
-              <User className="w-6 h-6 text-[#ff385c]" />
+            <DialogTitle className="flex items-center gap-2 text-2xl font-semibold text-[#1d1d1f] tracking-[-0.374px]">
+              <User className="w-6 h-6" />
               Minha Conta
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-[#7a7a7a] tracking-[-0.374px]">
               Visualize e edite suas informações pessoais.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            {/* Profile header */}
-            <div className="flex items-center gap-4 p-4 rounded-[14px] bg-[#f7f7f7] border border-[#dddddd] dark:bg-[rgba(255,255,255,0.03)] dark:border-[rgba(255,255,255,0.06)]">
-              <Avatar className="h-20 w-20 rounded-[14px] flex-shrink-0">
+            <div className="flex items-center gap-4 p-4 bg-[#f5f5f7] rounded-[12px]">
+              <Avatar className="h-16 w-16 rounded-[10px]">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback
-                  className="rounded-[14px] text-2xl font-semibold"
-                  style={{
-                    background: "#ff385c",
-                    color: "#ffffff",
-                  }}
-                >
+                <AvatarFallback className="text-xl bg-[#1d1d1f] text-[#ffffff] font-semibold rounded-[10px]">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-semibold text-lg text-[#222222] dark:text-[#f7f8f8]">
+                <h3 className="font-semibold text-lg text-[#1d1d1f] tracking-[-0.374px]">
                   {capitalizeFirstLetter(user.name)}
                 </h3>
-                <p className="text-sm text-[#6a6a6a] dark:text-[#8a8f98]">
-                  {user.email}
-                </p>
+                <p className="text-sm text-[#7a7a7a] tracking-[-0.224px]">{user.email}</p>
               </div>
             </div>
 
-            {/* Form fields */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="firstName"
-                    className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
-                  >
-                    <User className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                  <Label htmlFor="firstName" className="flex items-center gap-2 text-[#1d1d1f] font-semibold text-xs uppercase tracking-widest">
+                    <User className="w-4 h-4" />
                     Nome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
+                    <div className="h-[44px] bg-[#f5f5f7] animate-pulse rounded-[8px]" />
                   ) : (
-                    <Input
-                      id="firstName"
-                      placeholder="Digite seu nome"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
+                    <Input id="firstName" placeholder="Digite seu nome" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="lastName"
-                    className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
-                  >
-                    <User className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                  <Label htmlFor="lastName" className="flex items-center gap-2 text-[#1d1d1f] font-semibold text-xs uppercase tracking-widest">
+                    <User className="w-4 h-4" />
                     Sobrenome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
+                    <div className="h-[44px] bg-[#f5f5f7] animate-pulse rounded-[8px]" />
                   ) : (
-                    <Input
-                      id="lastName"
-                      placeholder="Digite seu sobrenome"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
+                    <Input id="lastName" placeholder="Digite seu sobrenome" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="accountEmail"
-                  className="flex items-center gap-2 text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]"
-                >
-                  <Mail className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+                <Label htmlFor="accountEmail" className="flex items-center gap-2 text-[#1d1d1f] font-semibold text-xs uppercase tracking-widest">
+                  <Mail className="w-4 h-4" />
                   Email
                 </Label>
                 {isLoadingProfile ? (
-                  <div className="h-14 animate-pulse rounded-[8px] bg-[#f2f2f2] dark:bg-[rgba(255,255,255,0.04)]" />
+                  <div className="h-[44px] bg-[#f5f5f7] animate-pulse rounded-[8px]" />
                 ) : (
-                  <Input
-                    id="accountEmail"
-                    type="email"
-                    placeholder="seu.email@exemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+                  <Input id="accountEmail" type="email" placeholder="seu.email@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                 )}
               </div>
             </div>
 
-            {/* Change password section */}
-            <div className="space-y-4 pt-4 border-t border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]">
-              <h3 className="text-sm flex items-center gap-2 font-semibold text-[#3f3f3f] dark:text-[#d0d6e0]">
-                <Lock className="w-4 h-4 text-[#6a6a6a] dark:text-[#8a8f98]" />
+            <div className="space-y-4 pt-4 border-t border-[#e0e0e0]">
+              <h3 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2 uppercase tracking-widest">
+                <Lock className="w-4 h-4" />
                 Alterar Senha
               </h3>
 
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="oldPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
-                    Senha Atual
-                  </Label>
-                  <Input
-                    id="oldPassword"
-                    type="password"
-                    placeholder="Digite sua senha atual"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                  />
+                  <Label htmlFor="oldPassword" className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-widest">Senha Atual</Label>
+                  <Input id="oldPassword" type="password" placeholder="Digite sua senha atual" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
-                    Nova Senha
-                  </Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Digite a nova senha (mín. 8 caracteres)"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
+                  <Label htmlFor="newPassword" className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-widest">Nova Senha</Label>
+                  <Input id="newPassword" type="password" placeholder="Mínimo 8 caracteres" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-[#3f3f3f] dark:text-[#d0d6e0]">
-                    Confirmar Nova Senha
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Digite novamente a nova senha"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
+                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-widest">Confirmar Nova Senha</Label>
+                  <Input id="confirmPassword" type="password" placeholder="Digite novamente a nova senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                 </div>
 
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={handleChangePassword}
+                  variant="secondary"
                   className="w-full"
                   disabled={isSubmitting || !oldPassword || !newPassword || !confirmPassword}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#222222] dark:border-[#8a8f98] mr-2" />
-                      Alterando...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 mr-2" />
-                      Alterar Senha
-                    </>
+                  {isSubmitting ? "Alterando..." : (
+                    <><Lock className="w-4 h-4" />Alterar Senha</>
                   )}
                 </Button>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-3 pt-4 border-t border-[#dddddd] dark:border-[rgba(255,255,255,0.06)]">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-                className="flex-1"
-                disabled={isSubmitting}
-              >
+            <div className="flex gap-3 pt-4 border-t border-[#e0e0e0]">
+              <Button type="button" variant="ghost" onClick={handleCloseDialog} className="flex-1" disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button
-                type="button"
-                variant="default"
-                onClick={handleSaveAccount}
-                className="flex-1"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Salvando...
-                  </>
-                ) : (
-                  "Salvar Alterações"
-                )}
+              <Button type="button" onClick={handleSaveAccount} className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </div>

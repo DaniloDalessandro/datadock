@@ -1,17 +1,11 @@
 "use client"
 
 import { useState, FormEvent } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { getApiUrl } from "@/lib/config"
-import {
-  Database,
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  AlertCircle,
-  ArrowRight,
-} from "lucide-react"
 
 interface ModernLoginFormProps {
   className?: string
@@ -20,26 +14,15 @@ interface ModernLoginFormProps {
 export function ModernLoginForm({ className }: ModernLoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [emailFocused, setEmailFocused] = useState(false)
-  const [passwordFocused, setPasswordFocused] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [isLoading, setIsLoading] = useState(false)
   const [loginError, setLoginError] = useState("")
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {}
-
-    if (!email) {
-      newErrors.email = "Email é obrigatório"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Por favor, insira um email válido"
-    }
-
-    if (!password) {
-      newErrors.password = "Senha é obrigatória"
-    }
-
+    if (!email) newErrors.email = "Email é obrigatório"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Email inválido"
+    if (!password) newErrors.password = "Senha é obrigatória"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -47,379 +30,119 @@ export function ModernLoginForm({ className }: ModernLoginFormProps) {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoginError("")
-
-    if (!validateForm()) {
-      return
-    }
-
+    if (!validateForm()) return
     setIsLoading(true)
-
     try {
       const response = await fetch(getApiUrl("/api/auth/login"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
-
       const data = await response.json()
-
       if (!response.ok) {
-        if (response.status === 401) {
-          setLoginError("Email ou senha incorretos. Por favor, tente novamente.")
-        } else if (response.status === 403) {
-          setLoginError(data.error || "Acesso negado. Conta pode estar inativa.")
-        } else if (response.status >= 500) {
-          setLoginError("Erro no servidor. Tente novamente mais tarde.")
-        } else {
-          setLoginError(data.error || data.message || "Falha no login. Verifique suas credenciais.")
-        }
+        if (response.status === 401) setLoginError("Email ou senha incorretos.")
+        else if (response.status === 403) setLoginError(data.error || "Acesso negado.")
+        else if (response.status >= 500) setLoginError("Erro no servidor. Tente mais tarde.")
+        else setLoginError(data.error || data.message || "Falha no login.")
         setIsLoading(false)
         return
       }
-
-      if (data.access || data.token) {
-        const accessToken = data.access || data.token
-        localStorage.setItem("access_token", accessToken)
-      }
-
-      if (data.refresh) {
-        localStorage.setItem("refresh_token", data.refresh)
-      }
-
-      if (data.user) {
-        localStorage.setItem("user_data", JSON.stringify(data.user))
-      }
-
-      if (data.user?.must_change_password) {
-        window.location.href = "/change-password"
-      } else {
-        window.location.href = "/dashboard"
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        setLoginError("Não foi possível conectar ao servidor. Verifique sua conexão.")
-      } else {
-        setLoginError("Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.")
-      }
+      if (data.access || data.token) localStorage.setItem("access_token", data.access || data.token)
+      if (data.refresh) localStorage.setItem("refresh_token", data.refresh)
+      if (data.user) localStorage.setItem("user_data", JSON.stringify(data.user))
+      window.location.href = "/dashboard"
+    } catch {
+      setLoginError("Não foi possível conectar ao servidor.")
       setIsLoading(false)
     }
   }
 
-  // Airbnb input style: white bg, hairline border, 8px radius, 56px height
-  const inputBase: React.CSSProperties = {
-    width: "100%",
-    height: "56px",
-    paddingLeft: "2.75rem",
-    paddingRight: "1rem",
-    fontSize: "16px",
-    color: "#222222",
-    background: "#ffffff",
-    border: "1px solid #dddddd",
-    borderRadius: "8px",
-    outline: "none",
-    transition: "border-color 150ms",
-    fontFamily: "inherit",
-  }
-
-  const emailInputStyle = (): React.CSSProperties => ({
-    ...inputBase,
-    ...(errors.email
-      ? { border: "2px solid #c13515" }
-      : emailFocused
-      ? { border: "2px solid #222222" }
-      : {}),
-  })
-
-  const passwordInputStyle = (): React.CSSProperties => ({
-    ...inputBase,
-    paddingRight: "2.75rem",
-    ...(errors.password
-      ? { border: "2px solid #c13515" }
-      : passwordFocused
-      ? { border: "2px solid #222222" }
-      : {}),
-  })
-
   return (
-    <div
-      className={cn("w-full login-form-in", className)}
-      style={{ fontFeatureSettings: '"cv01", "ss03"' }}
-    >
-      {/* ── Brand header ── */}
-      <div className="mb-8">
-        {/* Logo mark — visible on mobile only */}
-        <div className="flex items-center gap-2.5 mb-6 lg:hidden">
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0"
-            style={{
-              background: "rgba(255,56,92,0.10)",
-              border: "1px solid rgba(255,56,92,0.20)",
-            }}
-          >
-            <Database className="w-4 h-4" style={{ color: "#ff385c" }} />
-          </div>
-          <span
-            className="text-base tracking-tight font-semibold"
-            style={{ color: "#222222", letterSpacing: "-0.02em" }}
-          >
-            DataDock
-          </span>
+    <div className={cn("w-full max-w-sm", className)}>
+      {/* Mobile logo */}
+      <div className="lg:hidden flex items-center gap-3 mb-12">
+        <div className="w-9 h-9 bg-[#1d1d1f] rounded-[8px] flex items-center justify-center">
+          <span className="font-semibold text-[#ffffff] text-base">D</span>
         </div>
+        <span className="text-[#1d1d1f] font-semibold text-xl tracking-[-0.374px]">DataDock</span>
+      </div>
 
-        {/* Heading */}
-        <h1
-          className="mb-1.5 leading-tight"
-          style={{
-            color: "#222222",
-            fontWeight: 700,
-            fontSize: "28px",
-            letterSpacing: "-0.044rem",
-          }}
-        >
-          Bem-vindo de volta
-        </h1>
-        <p className="text-sm" style={{ color: "#6a6a6a" }}>
-          Entre na sua conta para continuar
+      <div className="mb-10">
+        <h2 className="text-[40px] font-semibold text-[#1d1d1f] leading-[1.10] mb-3 tracking-[-0.28px]">
+          Entrar
+        </h2>
+        <p className="text-[#7a7a7a] text-[17px] leading-[1.47] tracking-[-0.374px]">
+          Acesse sua conta para continuar
         </p>
       </div>
 
-      {/* ── Form ── */}
-      <form onSubmit={handleSubmit} noValidate>
-        {/* Email field */}
-        <div style={{ marginBottom: "16px" }}>
-          <label
-            htmlFor="email"
-            className="block"
-            style={{
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "#3f3f3f",
-              marginBottom: "6px",
-            }}
-          >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-[#1d1d1f]">
             Email
-          </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Mail
-                className="w-4 h-4 transition-colors duration-150"
-                style={{
-                  color: errors.email ? "#c13515" : emailFocused ? "#222222" : "#929292",
-                }}
-              />
-            </div>
-            <input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
-              }}
-              onFocus={() => setEmailFocused(true)}
-              onBlur={() => setEmailFocused(false)}
-              style={emailInputStyle()}
-              disabled={isLoading}
-              autoComplete="email"
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? "email-error" : undefined}
-            />
-          </div>
-          {errors.email && (
-            <p
-              id="email-error"
-              className="flex items-center gap-1.5 animate-in fade-in-50 duration-150"
-              style={{ color: "#c13515", fontSize: "12px", marginTop: "5px" }}
-            >
-              <AlertCircle className="w-3 h-3 flex-shrink-0" />
-              {errors.email}
-            </p>
-          )}
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (errors.email) setErrors(p => ({ ...p, email: undefined }))
+            }}
+            variant={errors.email ? "error" : "default"}
+            disabled={isLoading}
+          />
+          {errors.email && <p className="text-[14px] text-[#cc0000] tracking-[-0.224px]">{errors.email}</p>}
         </div>
 
-        {/* Password field */}
-        <div style={{ marginBottom: "8px" }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: "6px" }}>
-            <label
-              htmlFor="password"
-              style={{
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "#3f3f3f",
-              }}
-            >
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-widest text-[#1d1d1f]">
               Senha
-            </label>
-            <a
-              href="/reset-password"
-              className="transition-colors duration-150 underline"
-              style={{ fontSize: "13px", color: "#428bff" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#2166cc" }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#428bff" }}
-            >
-              Esqueceu a senha?
+            </Label>
+            <a href="#" className="text-[14px] text-[#0066cc] hover:text-[#0071e3] transition-colors tracking-[-0.224px]">
+              Esqueceu?
             </a>
           </div>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Lock
-                className="w-4 h-4 transition-colors duration-150"
-                style={{
-                  color: errors.password ? "#c13515" : passwordFocused ? "#222222" : "#929292",
-                }}
-              />
-            </div>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Digite sua senha"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
-              }}
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
-              style={passwordInputStyle()}
-              disabled={isLoading}
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "password-error" : undefined}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-150"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "2px",
-                color: "#929292",
-                display: "flex",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#222222" }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#929292" }}
-              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-            >
-              {showPassword
-                ? <EyeOff className="w-4 h-4" />
-                : <Eye    className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.password && (
-            <p
-              id="password-error"
-              className="flex items-center gap-1.5 animate-in fade-in-50 duration-150"
-              style={{ color: "#c13515", fontSize: "12px", marginTop: "5px" }}
-            >
-              <AlertCircle className="w-3 h-3 flex-shrink-0" />
-              {errors.password}
-            </p>
-          )}
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (errors.password) setErrors(p => ({ ...p, password: undefined }))
+            }}
+            variant={errors.password ? "error" : "default"}
+            disabled={isLoading}
+          />
+          {errors.password && <p className="text-[14px] text-[#cc0000] tracking-[-0.224px]">{errors.password}</p>}
         </div>
 
-        {/* Login error banner */}
         {loginError && (
-          <div
-            className="flex items-start gap-2.5 animate-in fade-in-50 duration-200"
-            style={{
-              background: "rgba(193,53,21,0.06)",
-              border: "1px solid rgba(193,53,21,0.20)",
-              borderRadius: "8px",
-              padding: "10px 12px",
-              marginTop: "16px",
-            }}
-          >
-            <AlertCircle
-              className="w-4 h-4 flex-shrink-0 mt-0.5"
-              style={{ color: "#c13515" }}
-            />
-            <p style={{ fontSize: "13px", color: "#c13515", lineHeight: 1.5 }}>
-              {loginError}
-            </p>
+          <div className="border border-[#cc0000] bg-[#cc0000]/5 p-4 rounded-[8px]">
+            <p className="text-[14px] text-[#cc0000] tracking-[-0.224px]">{loginError}</p>
           </div>
         )}
 
-        {/* Submit button — Rausch primary */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 transition-all duration-150"
-          style={{
-            height: "48px",
-            marginTop: "20px",
-            background: isLoading ? "rgba(255,56,92,0.65)" : "#ff385c",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            fontSize: "16px",
-            fontWeight: 500,
-            fontFamily: "inherit",
-            letterSpacing: "-0.01em",
-          }}
-          onMouseEnter={(e) => {
-            if (!isLoading) e.currentTarget.style.background = "#e00b41"
-          }}
-          onMouseLeave={(e) => {
-            if (!isLoading) e.currentTarget.style.background = "#ff385c"
-          }}
-          onMouseDown={(e) => {
-            if (!isLoading) e.currentTarget.style.background = "#c00030"
-          }}
-          onMouseUp={(e) => {
-            if (!isLoading) e.currentTarget.style.background = "#e00b41"
-          }}
-        >
+        <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? (
-            <>
-              <span
-                className="w-4 h-4 border-2 rounded-full animate-spin flex-shrink-0"
-                style={{
-                  borderColor: "rgba(255,255,255,0.30)",
-                  borderTopColor: "#ffffff",
-                }}
-              />
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 border-2 border-[#ffffff]/30 border-t-[#ffffff] rounded-full animate-spin" />
               Entrando...
-            </>
-          ) : (
-            <>
-              Entrar
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
+            </span>
+          ) : "Entrar"}
+        </Button>
       </form>
 
-      {/* ── Footer — legal links ── */}
-      <p
-        className="mt-8 text-center"
-        style={{ fontSize: "12px", color: "#929292", lineHeight: 1.6 }}
-      >
-        Ao continuar, você concorda com os{" "}
-        <a
-          href="#"
-          className="underline transition-colors duration-150"
-          style={{ color: "#428bff" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#2166cc" }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "#428bff" }}
-        >
+      <p className="mt-8 text-[12px] text-[#7a7a7a] leading-[1.3] tracking-[-0.12px]">
+        Ao entrar, você concorda com os{" "}
+        <a href="#" className="text-[#0066cc] hover:text-[#0071e3]">
           Termos de Serviço
-        </a>{" "}
-        e à{" "}
-        <a
-          href="#"
-          className="underline transition-colors duration-150"
-          style={{ color: "#428bff" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#2166cc" }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "#428bff" }}
-        >
+        </a>
+        {" "}e{" "}
+        <a href="#" className="text-[#0066cc] hover:text-[#0071e3]">
           Política de Privacidade
         </a>
       </p>

@@ -36,7 +36,7 @@ export function DataFlowAnimation() {
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           speed: 0.2 + Math.random() * 0.5,
-          opacity: 0.1 + Math.random() * 0.3,
+          opacity: 0.05 + Math.random() * 0.15,
           size: 1 + Math.random() * 2
         })
       }
@@ -46,8 +46,7 @@ export function DataFlowAnimation() {
     window.addEventListener("resize", resizeCanvas)
 
     const animate = () => {
-      // Clear with near-black — match #08090a
-      ctx.fillStyle = "rgba(8, 9, 10, 0.18)"
+      ctx.fillStyle = "rgba(220, 238, 177, 0.12)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       particles.forEach((particle) => {
@@ -59,13 +58,11 @@ export function DataFlowAnimation() {
         }
 
         ctx.beginPath()
-        // Use Linear brand indigo #5e6ad2 for particles
-        ctx.fillStyle = `rgba(94, 106, 210, ${particle.opacity})`
+        ctx.fillStyle = `rgba(0, 0, 0, ${particle.opacity})`
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
         ctx.fill()
       })
 
-      // Conecta partículas próximas com linhas graduais baseadas na distância
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x
@@ -74,7 +71,7 @@ export function DataFlowAnimation() {
 
           if (distance < 100) {
             ctx.beginPath()
-            ctx.strokeStyle = `rgba(94, 106, 210, ${0.08 * (1 - distance / 100)})`
+            ctx.strokeStyle = `rgba(0, 0, 0, ${0.04 * (1 - distance / 100)})`
             ctx.lineWidth = 0.5
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
@@ -96,8 +93,7 @@ export function DataFlowAnimation() {
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {/* Linear dark-mode background */}
-      <div className="absolute inset-0" style={{ background: "#08090a" }} />
+      <div className="absolute inset-0 bg-[#f5f5f7]" />
       <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   )
